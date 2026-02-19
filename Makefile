@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O2 -std=c11 -D_POSIX_C_SOURCE=200809L
 LDFLAGS =
 TARGET = red-ai
-SOURCES = rhel_ai_tool.c command_executor.c
+SOURCES = red_ai.c command_executor.c
 OBJECTS = $(SOURCES:.c=.o)
 HEADERS = config.h command_executor.h
 

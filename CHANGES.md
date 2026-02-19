@@ -26,7 +26,7 @@
    - Updated prerequisites to mention "Direct root access (UID 0)"
 
 5. **Code Changes**
-   - `rhel_ai_tool.c`: Updated banner with developer name and new tool name
+   - `red_ai.c`: Updated banner with developer name and new tool name
    - `command_executor.c`: Enhanced root check to prevent sudo execution
    - `Makefile`: Changed TARGET from `rhel-ai-tool` to `red-ai`
    - `.gitignore`: Added build artifacts and renamed binary
