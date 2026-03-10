@@ -130,6 +130,3 @@ Always test with `--dry-run` first!
 make clean
 ```
 
-## License
-
-MIT
