@@ -5,7 +5,7 @@
 ### Updates Made
 
 1. **Tool Renamed**
-   - From: `rhel-ai-tool`
+   - From: `red-ai`
    - To: `red-ai`
    - Binary name updated in Makefile and all documentation
 
@@ -20,7 +20,7 @@
    - Error message updated to clearly indicate requirement
 
 4. **Documentation Updates**
-   - README.md: Updated all examples to use `./red-ai` instead of `sudo ./rhel-ai-tool`
+   - README.md: Updated all examples to use `./red-ai` instead of `sudo ./red-ai`
    - QUICK_START.md: Updated all examples and added troubleshooting for root-only requirement
    - Added clear warnings about sudo not working
    - Updated prerequisites to mention "Direct root access (UID 0)"
@@ -28,7 +28,7 @@
 5. **Code Changes**
    - `red_ai.c`: Updated banner with developer name and new tool name
    - `command_executor.c`: Enhanced root check to prevent sudo execution
-   - `Makefile`: Changed TARGET from `rhel-ai-tool` to `red-ai`
+   - `Makefile`: Changed TARGET from `red-ai` to `red-ai`
    - `.gitignore`: Added build artifacts and renamed binary
 
 ### Key Features
