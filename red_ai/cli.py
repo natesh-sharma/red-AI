@@ -105,7 +105,15 @@ def main():
     )
 
     if results is not None:
-        log_execution(prompt, commands, results, dry_run=args.dry_run)
+        log_execution(
+            prompt, commands, results,
+            dry_run=args.dry_run,
+            source=response.get("source", "unknown"),
+            risk_level=risk_level,
+            description=description,
+            requires_reboot=requires_reboot,
+            notes=notes,
+        )
 
     return 0
 

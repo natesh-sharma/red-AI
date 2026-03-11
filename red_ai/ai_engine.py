@@ -56,13 +56,16 @@ def get_ai_response(prompt):
 
     # Try Ollama first
     try:
-        return _call_ollama(prompt)
-    except Exception as e:
+        result = _call_ollama(prompt)
+        result["source"] = "ollama"
+        return result
+    except Exception:
         pass
 
     # Fall back to local command matching
     result = match_local_command(prompt)
     if result:
+        result["source"] = "local_commands"
         result["notes"] = (result.get("notes", "") +
                            " [Matched from local command database]").strip()
         return result
