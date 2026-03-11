@@ -1,2 +1,11 @@
 node_modules
 .env
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+*.o
+red-ai
+rhel-ai-tool

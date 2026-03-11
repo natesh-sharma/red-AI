@@ -7,105 +7,82 @@ An intelligent command-line tool for RHEL Linux that simplifies system configura
 ## Features
 
 - **Natural Language Interface**: Configure RHEL systems using plain English
-- **Comprehensive Command Database**: Queries Supabase for pre-configured commands
+- **AI-Powered**: Uses local Ollama LLM (Mistral) for intelligent command generation
+- **Offline Fallback**: Built-in command database works without AI connectivity
 - **Safety Features**:
   - Root privilege checking
   - Interactive confirmation prompts
   - Dry-run mode for testing
-  - Risk level indicators
-- **Execution Logging**: All commands logged to database
+  - Risk level indicators (low / medium / high)
+- **Execution Logging**: All commands logged to `/var/log/red-ai/executions.log`
 - **Support For**:
-  - Kernel configurations (transparent hugepages, etc.)
+  - Kernel configurations (transparent hugepages, sysctl, modules, SysRq)
   - kdump setup
   - SELinux management
   - Firewall configuration
-  - And more...
+  - Networking (nmcli, hostname)
+  - Storage (disk usage, LVM, mounts)
+  - Services (systemctl)
+  - Users and password policies
+  - Packages (yum/dnf)
+  - Performance tuning (tuned profiles)
+  - Time/NTP (chrony, timedatectl)
+  - Logging (journalctl, rsyslog)
+  - And more via AI mode...
 
 ## Prerequisites
 
 - RHEL 7, 8, or 9
-- gcc and make
-- Direct root access (UID 0)
-- Internet connection (for Supabase)
+- Python 3.6+
+- Direct root access (UID 0) for execution mode
+- [Ollama](https://ollama.ai) (optional, for full AI mode)
 
 ## Installation
 
-### 1. Install Dependencies
 ```bash
-# RHEL 7/8
-sudo yum install -y gcc make
-
-# RHEL 9
-sudo dnf install -y gcc make
+pip install .
 ```
 
-### 2. Build the Tool
+### Optional: Install Ollama for AI mode
+
 ```bash
-make
+curl -fsSL https://ollama.ai/install.sh | sh
+ollama pull mistral
 ```
 
-### 3. Set Environment Variables
-```bash
-export SUPABASE_URL="your_project_url"
-export SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
-```
+Without Ollama, RED-AI falls back to its built-in command database.
 
 ## Usage
 
-**Important:** RED-AI must be run as root directly (UID 0). It will NOT work with `sudo` or when executed by non-root users.
-
 ### Basic Commands
 ```bash
-# As root user:
+# Show help
+red-ai --help
 
-# Check help
-./red-ai --help
+# Show version
+red-ai --version
 
-# Dry run to preview commands
-./red-ai --dry-run "disable transparent hugepages"
+# Show system information
+red-ai --info
 
-# Execute a configuration
-./red-ai "configure kdump"
+# Dry run to preview commands (no root required)
+red-ai --dry-run "disable transparent hugepages"
+
+# Execute a configuration (requires root)
+red-ai "configure kdump"
 
 # Skip confirmation prompts
-./red-ai -y "disable selinux"
+red-ai -y "disable selinux"
 ```
 
-## Pre-Configured Commands
-
-The tool includes commands for:
-- Disable/enable transparent hugepages
-- Configure/disable kdump
-- Manage SELinux
-- Control firewall
-- Check system status
-
-## Adding Custom Commands
-
-Insert commands into Supabase:
-```sql
-INSERT INTO command_definitions (
-    category, action, keywords, description,
-    commands, requires_reboot, risk_level
-) VALUES (
-    'kernel',
-    'configure',
-    ARRAY['disable', 'transparent', 'hugepages'],
-    'Disable transparent hugepages',
-    '["grubby --update-kernel=ALL --args=\"transparent_hugepage=never\""]'::jsonb,
-    true,
-    'medium'
-);
+### Examples
+```bash
+red-ai "check disk usage"
+red-ai "open port 8080 in firewall"
+red-ai "set timezone to America/New_York"
+red-ai "list running services"
+red-ai --dry-run "disable firewall"
 ```
-
-## Database Setup
-
-The tool requires a Supabase database with these tables:
-- `command_definitions` - Command mappings and metadata
-- `execution_history` - Audit log of executions
-- `system_configurations` - Current system state
-
-See QUICK_START.md for database migration details.
 
 ## Options
 
@@ -115,18 +92,18 @@ See QUICK_START.md for database migration details.
 | `-d, --dry-run` | Preview without executing |
 | `-y, --yes` | Skip confirmation |
 | `-v, --version` | Show version |
+| `-i, --info` | Show system information |
 
 ## Safety
 
 - **Low Risk**: Information queries only
 - **Medium Risk**: Standard configuration changes
-- **High Risk**: Critical system modifications
+- **High Risk**: Critical system modifications (SELinux, firewall disable, reboot)
 
 Always test with `--dry-run` first!
 
 ## Uninstall
 
 ```bash
-make clean
+pip uninstall red-ai
 ```
-

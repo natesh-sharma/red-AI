@@ -1,0 +1,2 @@
+# No external dependencies required.
+# Ollama (optional) is accessed via HTTP, no Python package needed.
