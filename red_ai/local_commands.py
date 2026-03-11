@@ -1617,18 +1617,95 @@ LOCAL_COMMANDS = [
 ]
 
 
+# Synonyms: map common words to the keywords used in command definitions
+SYNONYMS = {
+    "enable": ["enable", "configure", "setup", "start", "activate", "turn"],
+    "disable": ["disable", "stop", "deactivate", "turn"],
+    "check": ["check", "show", "display", "view", "list", "get", "see", "what"],
+    "configure": ["configure", "setup", "set", "create"],
+    "remove": ["remove", "delete", "uninstall", "drop"],
+    "add": ["add", "create", "new", "install", "open", "allow"],
+    "restart": ["restart", "reload", "refresh"],
+    "list": ["list", "show", "display", "view", "all"],
+    "on": ["enable", "start", "activate"],
+    "off": ["disable", "stop", "deactivate"],
+    "start": ["enable", "start", "configure"],
+    "stop": ["disable", "stop"],
+    "status": ["check", "status", "show"],
+    "show": ["check", "list", "show", "display"],
+    "turn": ["enable", "disable"],
+    "activate": ["enable", "start"],
+    "deactivate": ["disable", "stop"],
+    "info": ["check", "info", "show"],
+    "setup": ["configure", "setup", "enable"],
+    "install": ["install", "add", "configure"],
+    "uninstall": ["remove", "uninstall", "delete"],
+    "grow": ["extend", "grow", "expand"],
+    "expand": ["extend", "grow", "expand"],
+    "test": ["test", "check", "verify"],
+    "verify": ["check", "test", "verify"],
+    "harden": ["harden", "secure"],
+    "secure": ["harden", "secure"],
+}
+
+# Generic action words get lower weight than specific/unique keywords
+GENERIC_KEYWORDS = {
+    "enable", "disable", "check", "configure", "add", "remove", "set",
+    "list", "start", "stop", "restart", "show", "status", "create",
+    "delete", "install", "setup",
+}
+
+
+# Multi-word phrases that should map to a single keyword
+PHRASE_MAP = {
+    "turn on": "enable",
+    "turn off": "disable",
+    "switch on": "enable",
+    "switch off": "disable",
+    "shut down": "shutdown",
+    "power off": "poweroff",
+    "log out": "logout",
+}
+
+
+def _expand_prompt(prompt_words, prompt_lower):
+    """Expand prompt words with synonyms and phrase matching."""
+    expanded = set(prompt_words)
+
+    # Handle multi-word phrases first
+    for phrase, keyword in PHRASE_MAP.items():
+        if phrase in prompt_lower:
+            expanded.add(keyword)
+            # Remove conflicting expansions (e.g. "turn" alone)
+            for pword in phrase.split():
+                if pword in SYNONYMS:
+                    # Only keep synonyms that agree with the phrase direction
+                    pass
+
+    # Expand single-word synonyms
+    for word in list(prompt_words):
+        if word in SYNONYMS:
+            # If "turn" is part of "turn on/off", skip its ambiguous expansion
+            if word == "turn" and ("turn on" in prompt_lower or "turn off" in prompt_lower):
+                continue
+            expanded.update(SYNONYMS[word])
+
+    return expanded
+
+
 def match_local_command(prompt):
     """Match a user prompt against local command definitions using keyword scoring.
 
-    Uses a ratio-based scoring: what fraction of the entry's keywords appear
-    in the prompt. This prevents entries with few generic keywords from
-    winning over more specific matches.
+    Uses synonym expansion and weighted scoring: specific keywords (like
+    'kdump', 'selinux', 'hugepages') are worth more than generic action
+    words (like 'enable', 'check', 'disable').
 
     Returns the best matching command definition as a dict matching the AI
     response JSON format, or None if no good match is found.
     """
     prompt_lower = prompt.lower()
     prompt_words = set(prompt_lower.split())
+    expanded_words = _expand_prompt(prompt_words, prompt_lower)
 
     best_match = None
     best_score = 0.0
@@ -1637,26 +1714,43 @@ def match_local_command(prompt):
     for cmd in LOCAL_COMMANDS:
         keywords = cmd["keywords"]
         hits = 0
+        weighted_hits = 0.0
+
         for keyword in keywords:
+            matched = False
             if keyword in prompt_words:
-                hits += 2  # exact word match
+                matched = True
+                hits += 2
+            elif keyword in expanded_words:
+                matched = True
+                hits += 1  # synonym match is weaker
             elif keyword in prompt_lower:
+                matched = True
                 hits += 1  # substring match
+
+            if matched:
+                # Specific keywords worth 2x, generic action words worth 1x
+                if keyword in GENERIC_KEYWORDS:
+                    weighted_hits += 1.0
+                else:
+                    weighted_hits += 2.0
 
         if hits == 0:
             continue
 
-        # Score = fraction of keywords matched (weighted hits / max possible)
+        # Score combines coverage ratio with weighted keyword importance
         max_possible = len(keywords) * 2
-        score = hits / max_possible
+        coverage = hits / max_possible
+        importance = weighted_hits / len(keywords)
+        score = coverage * 0.4 + importance * 0.6
 
         if score > best_score or (score == best_score and hits > best_hits):
             best_score = score
             best_match = cmd
             best_hits = hits
 
-    # Require at least 40% keyword coverage and at least 2 raw hits
-    if best_score < 0.4 or best_hits < 2:
+    # Require minimum quality
+    if best_score < 0.3 or best_hits < 2:
         return None
 
     return {
