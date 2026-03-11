@@ -4,7 +4,7 @@ import urllib.error
 from .system_info import get_system_info, format_system_context
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "mistral"
+OLLAMA_MODEL = "red-ai-model"
 
 SYSTEM_PROMPT = """You are RED-AI, an expert RHEL Linux system administrator assistant.
 Your job is to translate natural language requests into precise RHEL shell commands.

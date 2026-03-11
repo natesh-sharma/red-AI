@@ -61,8 +61,11 @@ pip3 install .
 ### Optional: Install Ollama for AI mode
 
 ```bash
+# Install Ollama
 curl -fsSL https://ollama.ai/install.sh | sh
-ollama pull mistral
+
+# Build the custom RED-AI model (trained with 230+ RHEL examples)
+ollama create red-ai-model -f Modelfile
 ```
 
 Without Ollama, RED-AI falls back to its built-in command database.

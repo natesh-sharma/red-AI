@@ -26,7 +26,7 @@ mkdir -p "${TOPDIR}"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 echo "Creating source tarball..."
 TMPDIR=$(mktemp -d)
 mkdir -p "${TMPDIR}/${NAME}-${VERSION}"
-cp -r red_ai setup.py README.md requirements.txt LICENSE "${TMPDIR}/${NAME}-${VERSION}/"
+cp -r red_ai setup.py README.md requirements.txt LICENSE Modelfile "${TMPDIR}/${NAME}-${VERSION}/"
 tar czf "${TOPDIR}/SOURCES/${NAME}-${VERSION}.tar.gz" -C "${TMPDIR}" "${NAME}-${VERSION}"
 rm -rf "${TMPDIR}"
 
