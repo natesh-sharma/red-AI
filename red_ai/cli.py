@@ -10,16 +10,23 @@ from .logger import log_execution
 from .system_info import get_system_info, format_system_context
 
 
-BANNER = f"""
-{color('╔════════════════════════════════════════════════════════════╗', 'cyan')}
-{color('║                                                          ║', 'cyan')}
-{color(f'║         RED-AI Configuration Assistant v{__version__}            ║', 'cyan')}
-{color('║                                                          ║', 'cyan')}
-{color('║   AI-powered system configuration tool for RHEL Linux    ║', 'cyan')}
-{color('║                Developed by: Natesh Sharma               ║', 'cyan')}
-{color('║                                                          ║', 'cyan')}
-{color('╚════════════════════════════════════════════════════════════╝', 'cyan')}
-"""
+def _build_banner():
+    lines = [
+        "",
+        f"RED-AI Configuration Assistant v{__version__}",
+        "",
+        "AI-powered system configuration tool for RHEL Linux",
+        "Developed by: Natesh Sharma",
+        "",
+    ]
+    inner = max(len(line) for line in lines) + 6
+    top = "╔" + "═" * inner + "╗"
+    bot = "╚" + "═" * inner + "╝"
+    mid = ["║" + line.center(inner) + "║" for line in lines]
+    return "\n" + "\n".join([color(l, "cyan") for l in [top] + mid + [bot]]) + "\n"
+
+
+BANNER = _build_banner()
 
 
 def get_response(prompt):

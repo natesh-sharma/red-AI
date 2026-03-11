@@ -13,9 +13,11 @@ setup(
             "red-ai=red_ai.cli:entry_point",
         ],
     },
+    license="GPL-3.0",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: POSIX :: Linux",
         "Intended Audience :: System Administrators",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
 )

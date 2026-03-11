@@ -2,7 +2,7 @@ Name:           red-ai
 Version:        2.0.0
 Release:        1%{?dist}
 Summary:        AI-powered RHEL configuration tool
-License:        Proprietary
+License:        GPLv3
 URL:            https://github.com/natesh-sharma/red-AI
 
 Source0:        %{name}-%{version}.tar.gz
@@ -31,6 +31,7 @@ Developed by Natesh Sharma.
 mkdir -p %{buildroot}/var/log/red-ai
 
 %files
+%license LICENSE
 %doc README.md
 %{python3_sitelib}/red_ai/
 %{python3_sitelib}/red_ai-*.egg-info/
