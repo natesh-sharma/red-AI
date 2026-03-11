@@ -39,8 +39,23 @@ An intelligent command-line tool for RHEL Linux that simplifies system configura
 
 ## Installation
 
+### Option 1: RPM Package (recommended for RHEL)
+
+Build and install as a native RPM:
 ```bash
-pip install .
+# Install build dependencies
+sudo yum install -y rpm-build python3-devel python3-setuptools
+
+# Build the RPM
+./build_rpm.sh
+
+# Install the RPM
+sudo yum install -y ~/rpmbuild/RPMS/noarch/red-ai-*.rpm
+```
+
+### Option 2: pip install
+```bash
+pip3 install .
 ```
 
 ### Optional: Install Ollama for AI mode
@@ -105,5 +120,9 @@ Always test with `--dry-run` first!
 ## Uninstall
 
 ```bash
-pip uninstall red-ai
+# If installed via RPM
+sudo yum remove red-ai
+
+# If installed via pip
+pip3 uninstall red-ai
 ```
