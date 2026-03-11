@@ -85,6 +85,58 @@ MESSAGE user check sysrq status
 MESSAGE assistant {"description":"Check current SysRq setting","category":"kernel","commands":["sysctl kernel.sysrq"],"risk_level":"low","requires_reboot":false,"notes":""}
 
 ###############################################################################
+# NMI WATCHDOG
+###############################################################################
+
+MESSAGE user enable nmi watchdog
+MESSAGE assistant {"description":"Enable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=1","echo 'kernel.nmi_watchdog = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"NMI watchdog detects hard lockups. May increase power consumption slightly."}
+
+MESSAGE user turn on nmi watchdog
+MESSAGE assistant {"description":"Enable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=1","echo 'kernel.nmi_watchdog = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"NMI watchdog detects hard lockups. May increase power consumption slightly."}
+
+MESSAGE user disable nmi watchdog
+MESSAGE assistant {"description":"Disable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=0","echo 'kernel.nmi_watchdog = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Disabling NMI watchdog reduces CPU overhead and power usage but removes hard lockup detection."}
+
+MESSAGE user turn off nmi watchdog
+MESSAGE assistant {"description":"Disable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=0","echo 'kernel.nmi_watchdog = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Disabling NMI watchdog reduces CPU overhead and power usage but removes hard lockup detection."}
+
+MESSAGE user check nmi watchdog status
+MESSAGE assistant {"description":"Check NMI watchdog status","category":"kernel","commands":["sysctl kernel.nmi_watchdog","cat /proc/sys/kernel/nmi_watchdog"],"risk_level":"low","requires_reboot":false,"notes":""}
+
+MESSAGE user is nmi watchdog enabled
+MESSAGE assistant {"description":"Check NMI watchdog status","category":"kernel","commands":["sysctl kernel.nmi_watchdog","cat /proc/sys/kernel/nmi_watchdog"],"risk_level":"low","requires_reboot":false,"notes":""}
+
+MESSAGE user enable unknown nmi panic
+MESSAGE assistant {"description":"Enable panic on unknown NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=1","echo 'kernel.unknown_nmi_panic = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic/crash on unknown NMI. Useful with kdump for debugging."}
+
+MESSAGE user disable unknown nmi panic
+MESSAGE assistant {"description":"Disable panic on unknown NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=0","echo 'kernel.unknown_nmi_panic = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+
+MESSAGE user enable panic on unrecovered nmi
+MESSAGE assistant {"description":"Enable panic on unrecovered NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_unrecovered_nmi=1","echo 'kernel.panic_on_unrecovered_nmi = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on unrecovered NMI (e.g. memory errors)."}
+
+MESSAGE user disable panic on unrecovered nmi
+MESSAGE assistant {"description":"Disable panic on unrecovered NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_unrecovered_nmi=0","echo 'kernel.panic_on_unrecovered_nmi = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+
+MESSAGE user enable panic on io nmi
+MESSAGE assistant {"description":"Enable panic on I/O NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_io_nmi=1","echo 'kernel.panic_on_io_nmi = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on I/O NMI errors. Useful with kdump for debugging I/O issues."}
+
+MESSAGE user disable panic on io nmi
+MESSAGE assistant {"description":"Disable panic on I/O NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_io_nmi=0","echo 'kernel.panic_on_io_nmi = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+
+MESSAGE user enable all nmi panic settings
+MESSAGE assistant {"description":"Enable all NMI panic settings (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=1","sysctl -w kernel.panic_on_io_nmi=1","sysctl -w kernel.panic_on_unrecovered_nmi=1","echo 'kernel.unknown_nmi_panic = 1' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_io_nmi = 1' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_unrecovered_nmi = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on any NMI event. Ensure kdump is configured to capture crash dumps."}
+
+MESSAGE user disable all nmi panic settings
+MESSAGE assistant {"description":"Disable all NMI panic settings (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=0","sysctl -w kernel.panic_on_io_nmi=0","sysctl -w kernel.panic_on_unrecovered_nmi=0","echo 'kernel.unknown_nmi_panic = 0' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_io_nmi = 0' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_unrecovered_nmi = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+
+MESSAGE user check nmi panic settings
+MESSAGE assistant {"description":"Check all NMI-related kernel settings","category":"kernel","commands":["sysctl kernel.nmi_watchdog","sysctl kernel.unknown_nmi_panic","sysctl kernel.panic_on_io_nmi","sysctl kernel.panic_on_unrecovered_nmi"],"risk_level":"low","requires_reboot":false,"notes":""}
+
+MESSAGE user check all nmi settings
+MESSAGE assistant {"description":"Check all NMI-related kernel settings","category":"kernel","commands":["sysctl kernel.nmi_watchdog","sysctl kernel.unknown_nmi_panic","sysctl kernel.panic_on_io_nmi","sysctl kernel.panic_on_unrecovered_nmi"],"risk_level":"low","requires_reboot":false,"notes":""}
+
+###############################################################################
 # KDUMP
 ###############################################################################
 
