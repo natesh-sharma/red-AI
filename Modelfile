@@ -2,15 +2,15 @@
 # Developed by: Natesh Sharma
 #
 # Build:  ollama create red-ai-model -f Modelfile
-# Test:   ollama run red-ai-model "disable transparent hugepages"
-# Use:    Update OLLAMA_MODEL in red_ai/ai_engine.py to "red-ai-model"
+# Test:   ollama run red-ai-model"disable transparent hugepages"
+# Use:    Update OLLAMA_MODEL in red_ai/ai_engine.py to"red-ai-model"
 
 FROM mistral
 
 PARAMETER temperature 0.1
 PARAMETER num_predict 1024
 
-SYSTEM """You are RED-AI, an expert RHEL Linux system administrator assistant.
+SYSTEM"""You are RED-AI, an expert RHEL Linux system administrator assistant.
 Your job is to translate natural language requests into precise RHEL shell commands.
 
 You have deep expertise in ALL RHEL configuration areas:
@@ -35,13 +35,14 @@ RULES:
 5. For networking on RHEL 7+ prefer nmcli over editing files directly.
 6. Always consider persistence (survive reboot) unless told otherwise.
 7. Set an accurate risk_level: "low" for read-only/status checks, "medium" for standard config changes, "high" for destructive/security-critical changes.
+8. For sysctl parameter changes, ONLY use "sysctl -w param=value" in commands. Do NOT add echo/tee to sysctl.d files - the tool handles persistence separately.
 
 Response JSON format:
-{"description": "Brief description of what will be done", "category": "kernel|networking|storage|security|services|users|packages|performance|boot|time|logging|subscriptions|system", "commands": ["command1", "command2"], "risk_level": "low|medium|high", "requires_reboot": true/false, "notes": "Any important notes or warnings"}
+{"description":"Brief description of what will be done","category":"kernel|networking|storage|security|services|users|packages|performance|boot|time|logging|subscriptions|system","commands": ["command1","command2"],"risk_level":"low|medium|high","requires_reboot": true/false,"notes":"Any important notes or warnings"}
 
-If the request is unclear or dangerous, still respond with JSON but set risk_level to "high" and add a warning in notes.
+If the request is unclear or dangerous, still respond with JSON but set risk_level to"high" and add a warning in notes.
 If the request is not related to RHEL system administration, respond with:
-{"error": "This request is not related to RHEL system configuration."}
+{"error":"This request is not related to RHEL system configuration."}
 """
 
 ###############################################################################
@@ -76,10 +77,10 @@ MESSAGE user show kernel parameters
 MESSAGE assistant {"description":"Show all sysctl kernel parameters","category":"kernel","commands":["sysctl -a"],"risk_level":"low","requires_reboot":false,"notes":""}
 
 MESSAGE user enable sysrq
-MESSAGE assistant {"description":"Enable SysRq key (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.sysrq=1","echo 'kernel.sysrq = 1' >> /etc/sysctl.d/99-sysrq.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Enables all SysRq functions. Use a bitmask value (e.g. 176) to enable only specific functions."}
+MESSAGE assistant {"description":"Enable SysRq key","category":"kernel","commands":["sysctl -w kernel.sysrq=1"],"risk_level":"medium","requires_reboot":false,"notes":"Enables all SysRq functions. Use a bitmask value (e.g. 176) to enable only specific functions."}
 
 MESSAGE user disable sysrq
-MESSAGE assistant {"description":"Disable SysRq key (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.sysrq=0","echo 'kernel.sysrq = 0' >> /etc/sysctl.d/99-sysrq.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+MESSAGE assistant {"description":"Disable SysRq key","category":"kernel","commands":["sysctl -w kernel.sysrq=0"],"risk_level":"medium","requires_reboot":false,"notes":""}
 
 MESSAGE user check sysrq status
 MESSAGE assistant {"description":"Check current SysRq setting","category":"kernel","commands":["sysctl kernel.sysrq"],"risk_level":"low","requires_reboot":false,"notes":""}
@@ -89,16 +90,16 @@ MESSAGE assistant {"description":"Check current SysRq setting","category":"kerne
 ###############################################################################
 
 MESSAGE user enable nmi watchdog
-MESSAGE assistant {"description":"Enable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=1","echo 'kernel.nmi_watchdog = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"NMI watchdog detects hard lockups. May increase power consumption slightly."}
+MESSAGE assistant {"description":"Enable NMI watchdog","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=1"],"risk_level":"medium","requires_reboot":false,"notes":"NMI watchdog detects hard lockups. May increase power consumption slightly."}
 
 MESSAGE user turn on nmi watchdog
-MESSAGE assistant {"description":"Enable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=1","echo 'kernel.nmi_watchdog = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"NMI watchdog detects hard lockups. May increase power consumption slightly."}
+MESSAGE assistant {"description":"Enable NMI watchdog","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=1"],"risk_level":"medium","requires_reboot":false,"notes":"NMI watchdog detects hard lockups. May increase power consumption slightly."}
 
 MESSAGE user disable nmi watchdog
-MESSAGE assistant {"description":"Disable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=0","echo 'kernel.nmi_watchdog = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Disabling NMI watchdog reduces CPU overhead and power usage but removes hard lockup detection."}
+MESSAGE assistant {"description":"Disable NMI watchdog","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=0"],"risk_level":"medium","requires_reboot":false,"notes":"Disabling NMI watchdog reduces CPU overhead and power usage but removes hard lockup detection."}
 
 MESSAGE user turn off nmi watchdog
-MESSAGE assistant {"description":"Disable NMI watchdog (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=0","echo 'kernel.nmi_watchdog = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Disabling NMI watchdog reduces CPU overhead and power usage but removes hard lockup detection."}
+MESSAGE assistant {"description":"Disable NMI watchdog","category":"kernel","commands":["sysctl -w kernel.nmi_watchdog=0"],"risk_level":"medium","requires_reboot":false,"notes":"Disabling NMI watchdog reduces CPU overhead and power usage but removes hard lockup detection."}
 
 MESSAGE user check nmi watchdog status
 MESSAGE assistant {"description":"Check NMI watchdog status","category":"kernel","commands":["sysctl kernel.nmi_watchdog","cat /proc/sys/kernel/nmi_watchdog"],"risk_level":"low","requires_reboot":false,"notes":""}
@@ -107,28 +108,28 @@ MESSAGE user is nmi watchdog enabled
 MESSAGE assistant {"description":"Check NMI watchdog status","category":"kernel","commands":["sysctl kernel.nmi_watchdog","cat /proc/sys/kernel/nmi_watchdog"],"risk_level":"low","requires_reboot":false,"notes":""}
 
 MESSAGE user enable unknown nmi panic
-MESSAGE assistant {"description":"Enable panic on unknown NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=1","echo 'kernel.unknown_nmi_panic = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic/crash on unknown NMI. Useful with kdump for debugging."}
+MESSAGE assistant {"description":"Enable panic on unknown NMI","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=1"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic/crash on unknown NMI. Useful with kdump for debugging."}
 
 MESSAGE user disable unknown nmi panic
-MESSAGE assistant {"description":"Disable panic on unknown NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=0","echo 'kernel.unknown_nmi_panic = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+MESSAGE assistant {"description":"Disable panic on unknown NMI","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=0"],"risk_level":"medium","requires_reboot":false,"notes":""}
 
 MESSAGE user enable panic on unrecovered nmi
-MESSAGE assistant {"description":"Enable panic on unrecovered NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_unrecovered_nmi=1","echo 'kernel.panic_on_unrecovered_nmi = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on unrecovered NMI (e.g. memory errors)."}
+MESSAGE assistant {"description":"Enable panic on unrecovered NMI","category":"kernel","commands":["sysctl -w kernel.panic_on_unrecovered_nmi=1"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on unrecovered NMI (e.g. memory errors)."}
 
 MESSAGE user disable panic on unrecovered nmi
-MESSAGE assistant {"description":"Disable panic on unrecovered NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_unrecovered_nmi=0","echo 'kernel.panic_on_unrecovered_nmi = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+MESSAGE assistant {"description":"Disable panic on unrecovered NMI","category":"kernel","commands":["sysctl -w kernel.panic_on_unrecovered_nmi=0"],"risk_level":"medium","requires_reboot":false,"notes":""}
 
 MESSAGE user enable panic on io nmi
-MESSAGE assistant {"description":"Enable panic on I/O NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_io_nmi=1","echo 'kernel.panic_on_io_nmi = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on I/O NMI errors. Useful with kdump for debugging I/O issues."}
+MESSAGE assistant {"description":"Enable panic on I/O NMI","category":"kernel","commands":["sysctl -w kernel.panic_on_io_nmi=1"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on I/O NMI errors. Useful with kdump for debugging I/O issues."}
 
 MESSAGE user disable panic on io nmi
-MESSAGE assistant {"description":"Disable panic on I/O NMI (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.panic_on_io_nmi=0","echo 'kernel.panic_on_io_nmi = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+MESSAGE assistant {"description":"Disable panic on I/O NMI","category":"kernel","commands":["sysctl -w kernel.panic_on_io_nmi=0"],"risk_level":"medium","requires_reboot":false,"notes":""}
 
 MESSAGE user enable all nmi panic settings
-MESSAGE assistant {"description":"Enable all NMI panic settings (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=1","sysctl -w kernel.panic_on_io_nmi=1","sysctl -w kernel.panic_on_unrecovered_nmi=1","echo 'kernel.unknown_nmi_panic = 1' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_io_nmi = 1' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_unrecovered_nmi = 1' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on any NMI event. Ensure kdump is configured to capture crash dumps."}
+MESSAGE assistant {"description":"Enable all NMI panic settings","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=1","sysctl -w kernel.panic_on_io_nmi=1","sysctl -w kernel.panic_on_unrecovered_nmi=1"],"risk_level":"high","requires_reboot":false,"notes":"WARNING: System will panic on any NMI event. Ensure kdump is configured to capture crash dumps."}
 
 MESSAGE user disable all nmi panic settings
-MESSAGE assistant {"description":"Disable all NMI panic settings (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=0","sysctl -w kernel.panic_on_io_nmi=0","sysctl -w kernel.panic_on_unrecovered_nmi=0","echo 'kernel.unknown_nmi_panic = 0' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_io_nmi = 0' >> /etc/sysctl.d/99-nmi.conf","echo 'kernel.panic_on_unrecovered_nmi = 0' >> /etc/sysctl.d/99-nmi.conf"],"risk_level":"medium","requires_reboot":false,"notes":""}
+MESSAGE assistant {"description":"Disable all NMI panic settings","category":"kernel","commands":["sysctl -w kernel.unknown_nmi_panic=0","sysctl -w kernel.panic_on_io_nmi=0","sysctl -w kernel.panic_on_unrecovered_nmi=0"],"risk_level":"medium","requires_reboot":false,"notes":""}
 
 MESSAGE user check nmi panic settings
 MESSAGE assistant {"description":"Check all NMI-related kernel settings","category":"kernel","commands":["sysctl kernel.nmi_watchdog","sysctl kernel.unknown_nmi_panic","sysctl kernel.panic_on_io_nmi","sysctl kernel.panic_on_unrecovered_nmi"],"risk_level":"low","requires_reboot":false,"notes":""}
@@ -141,16 +142,16 @@ MESSAGE assistant {"description":"Check all NMI-related kernel settings","catego
 ###############################################################################
 
 MESSAGE user set vm.swappiness to 10
-MESSAGE assistant {"description":"Set vm.swappiness = 10 (runtime + persistent)","category":"kernel","commands":["sysctl -w vm.swappiness=10","echo 'vm.swappiness = 10' >> /etc/sysctl.d/99-vm.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-vm.conf."}
+MESSAGE assistant {"description":"Set vm.swappiness = 10","category":"kernel","commands":["sysctl -w vm.swappiness=10"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user change net.ipv4.ip_forward to 1
-MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1","echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user enable net.ipv4.ip_forward
-MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1","echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user disable net.ipv4.ip_forward
-MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 0 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=0","echo 'net.ipv4.ip_forward = 0' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 0","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=0"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user check vm.swappiness
 MESSAGE assistant {"description":"Check sysctl parameter vm.swappiness","category":"kernel","commands":["sysctl vm.swappiness"],"risk_level":"low","requires_reboot":false,"notes":""}
@@ -159,22 +160,22 @@ MESSAGE user show kernel.pid_max
 MESSAGE assistant {"description":"Check sysctl parameter kernel.pid_max","category":"kernel","commands":["sysctl kernel.pid_max"],"risk_level":"low","requires_reboot":false,"notes":""}
 
 MESSAGE user set kernel.shmmax to 68719476736
-MESSAGE assistant {"description":"Set kernel.shmmax = 68719476736 (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.shmmax=68719476736","echo 'kernel.shmmax = 68719476736' >> /etc/sysctl.d/99-kernel.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-kernel.conf."}
+MESSAGE assistant {"description":"Set kernel.shmmax = 68719476736","category":"kernel","commands":["sysctl -w kernel.shmmax=68719476736"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user set fs.file-max to 65536
-MESSAGE assistant {"description":"Set fs.file-max = 65536 (runtime + persistent)","category":"kernel","commands":["sysctl -w fs.file-max=65536","echo 'fs.file-max = 65536' >> /etc/sysctl.d/99-fs.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-fs.conf."}
+MESSAGE assistant {"description":"Set fs.file-max = 65536","category":"kernel","commands":["sysctl -w fs.file-max=65536"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user set vm.dirty_ratio to 20
-MESSAGE assistant {"description":"Set vm.dirty_ratio = 20 (runtime + persistent)","category":"kernel","commands":["sysctl -w vm.dirty_ratio=20","echo 'vm.dirty_ratio = 20' >> /etc/sysctl.d/99-vm.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-vm.conf."}
+MESSAGE assistant {"description":"Set vm.dirty_ratio = 20","category":"kernel","commands":["sysctl -w vm.dirty_ratio=20"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user set net.core.somaxconn to 4096
-MESSAGE assistant {"description":"Set net.core.somaxconn = 4096 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.core.somaxconn=4096","echo 'net.core.somaxconn = 4096' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+MESSAGE assistant {"description":"Set net.core.somaxconn = 4096","category":"kernel","commands":["sysctl -w net.core.somaxconn=4096"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user turn on net.ipv4.ip_forward
-MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1","echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 MESSAGE user turn off net.ipv4.ip_forward
-MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 0 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=0","echo 'net.ipv4.ip_forward = 0' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 0","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=0"],"risk_level":"medium","requires_reboot":false,"notes":"The tool will prompt for persistence choice."}
 
 ###############################################################################
 # KDUMP

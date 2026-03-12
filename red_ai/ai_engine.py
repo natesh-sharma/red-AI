@@ -31,6 +31,7 @@ RULES:
 5. For networking on RHEL 7+ prefer nmcli over editing files directly.
 6. Always consider persistence (survive reboot) unless told otherwise.
 7. Set an accurate risk_level: "low" for read-only/status checks, "medium" for standard config changes, "high" for destructive/security-critical changes.
+8. For sysctl parameter changes, ONLY use "sysctl -w param=value" in commands. Do NOT add echo/tee to sysctl.d files - the tool handles persistence separately.
 
 Response JSON format:
 {
@@ -50,6 +51,38 @@ If the request is not related to RHEL system administration, respond with:
 """
 
 
+def _detect_sysctl_in_response(result):
+    """Detect sysctl commands in AI response and add persist_mode flag.
+
+    If the response contains 'sysctl -w param=value', extract the param
+    and value so the CLI can prompt the user for persistence choice.
+    """
+    import re
+
+    commands = result.get("commands", [])
+    if not commands:
+        return result
+
+    # Look for sysctl -w param=value in commands
+    for cmd in commands:
+        match = re.match(r'^sysctl\s+-w\s+([\w.:-]+)=(.+)$', cmd.strip())
+        if match:
+            param = match.group(1)
+            value = match.group(2)
+            namespace = param.split(".")[0]
+            conf_file = "/etc/sysctl.d/99-{}.conf".format(namespace)
+
+            result["persist_mode"] = "ask"
+            result["sysctl_param"] = param
+            result["sysctl_value"] = value
+            result["sysctl_conf"] = conf_file
+            # Only keep the sysctl -w command; CLI will build the rest
+            result["commands"] = [cmd.strip()]
+            return result
+
+    return result
+
+
 def get_ai_response(prompt):
     """Get AI response via Ollama (local LLM), fall back to local commands."""
     from .local_commands import match_local_command
@@ -58,6 +91,7 @@ def get_ai_response(prompt):
     try:
         result = _call_ollama(prompt)
         result["source"] = "ollama"
+        result = _detect_sysctl_in_response(result)
         return result
     except Exception:
         pass
