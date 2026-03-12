@@ -137,6 +137,46 @@ MESSAGE user check all nmi settings
 MESSAGE assistant {"description":"Check all NMI-related kernel settings","category":"kernel","commands":["sysctl kernel.nmi_watchdog","sysctl kernel.unknown_nmi_panic","sysctl kernel.panic_on_io_nmi","sysctl kernel.panic_on_unrecovered_nmi"],"risk_level":"low","requires_reboot":false,"notes":""}
 
 ###############################################################################
+# GENERIC SYSCTL PARAMETERS
+###############################################################################
+
+MESSAGE user set vm.swappiness to 10
+MESSAGE assistant {"description":"Set vm.swappiness = 10 (runtime + persistent)","category":"kernel","commands":["sysctl -w vm.swappiness=10","echo 'vm.swappiness = 10' >> /etc/sysctl.d/99-vm.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-vm.conf."}
+
+MESSAGE user change net.ipv4.ip_forward to 1
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1","echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+
+MESSAGE user enable net.ipv4.ip_forward
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1","echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+
+MESSAGE user disable net.ipv4.ip_forward
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 0 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=0","echo 'net.ipv4.ip_forward = 0' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+
+MESSAGE user check vm.swappiness
+MESSAGE assistant {"description":"Check sysctl parameter vm.swappiness","category":"kernel","commands":["sysctl vm.swappiness"],"risk_level":"low","requires_reboot":false,"notes":""}
+
+MESSAGE user show kernel.pid_max
+MESSAGE assistant {"description":"Check sysctl parameter kernel.pid_max","category":"kernel","commands":["sysctl kernel.pid_max"],"risk_level":"low","requires_reboot":false,"notes":""}
+
+MESSAGE user set kernel.shmmax to 68719476736
+MESSAGE assistant {"description":"Set kernel.shmmax = 68719476736 (runtime + persistent)","category":"kernel","commands":["sysctl -w kernel.shmmax=68719476736","echo 'kernel.shmmax = 68719476736' >> /etc/sysctl.d/99-kernel.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-kernel.conf."}
+
+MESSAGE user set fs.file-max to 65536
+MESSAGE assistant {"description":"Set fs.file-max = 65536 (runtime + persistent)","category":"kernel","commands":["sysctl -w fs.file-max=65536","echo 'fs.file-max = 65536' >> /etc/sysctl.d/99-fs.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-fs.conf."}
+
+MESSAGE user set vm.dirty_ratio to 20
+MESSAGE assistant {"description":"Set vm.dirty_ratio = 20 (runtime + persistent)","category":"kernel","commands":["sysctl -w vm.dirty_ratio=20","echo 'vm.dirty_ratio = 20' >> /etc/sysctl.d/99-vm.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-vm.conf."}
+
+MESSAGE user set net.core.somaxconn to 4096
+MESSAGE assistant {"description":"Set net.core.somaxconn = 4096 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.core.somaxconn=4096","echo 'net.core.somaxconn = 4096' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+
+MESSAGE user turn on net.ipv4.ip_forward
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 1 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=1","echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+
+MESSAGE user turn off net.ipv4.ip_forward
+MESSAGE assistant {"description":"Set net.ipv4.ip_forward = 0 (runtime + persistent)","category":"kernel","commands":["sysctl -w net.ipv4.ip_forward=0","echo 'net.ipv4.ip_forward = 0' >> /etc/sysctl.d/99-net.conf"],"risk_level":"medium","requires_reboot":false,"notes":"Runtime change is immediate. Persistent via /etc/sysctl.d/99-net.conf."}
+
+###############################################################################
 # KDUMP
 ###############################################################################
 

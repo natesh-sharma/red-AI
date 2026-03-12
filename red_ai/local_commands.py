@@ -1848,16 +1848,114 @@ def _expand_prompt(prompt_words, prompt_lower):
     return expanded
 
 
+def _match_sysctl(prompt):
+    """Detect sysctl parameter patterns and generate dynamic commands.
+
+    Handles prompts like:
+      - "set vm.swappiness to 10"
+      - "change net.ipv4.ip_forward to 1"
+      - "check kernel.pid_max"
+      - "show vm.swappiness"
+      - "set kernel.shmmax=68719476736"
+      - "enable net.ipv4.ip_forward"
+      - "disable net.ipv4.ip_forward"
+    """
+    import re
+
+    prompt_lower = prompt.lower().strip()
+
+    # Match sysctl-style parameter names (e.g. kernel.sysrq, vm.swappiness, net.ipv4.ip_forward, fs.file-max)
+    param_pattern = r'(kernel\.[\w.:-]+|vm\.[\w.:-]+|net\.[\w.:-]+|fs\.[\w.:-]+|dev\.[\w.:-]+|user\.[\w.:-]+)'
+    param_match = re.search(param_pattern, prompt_lower)
+
+    if not param_match:
+        return None
+
+    param = param_match.group(1)
+
+    # Determine action: set with value, enable (=1), disable (=0), or check
+    check_words = {"check", "show", "get", "view", "display", "what", "current", "read"}
+    enable_words = {"enable", "activate", "turn on"}
+    disable_words = {"disable", "deactivate", "turn off"}
+    set_words = {"set", "change", "modify", "update", "configure"}
+
+    prompt_words = set(prompt_lower.split())
+
+    # Check for "turn on/off" phrases
+    has_turn_on = "turn on" in prompt_lower
+    has_turn_off = "turn off" in prompt_lower
+
+    # Extract value if present: "to 10", "= 10", "=10", "value 10"
+    value_match = re.search(r'(?:to|=|value)\s*(\S+)', prompt_lower[param_match.end():])
+    if not value_match:
+        # Also check before param: "set 10 for kernel.xxx" (unlikely but handle)
+        value_match = re.search(r'(?:to|=|value)\s*(\S+)', prompt_lower)
+        # Filter out the param itself
+        if value_match and value_match.group(1) in param:
+            value_match = None
+
+    # Determine action
+    if prompt_words & check_words or (not prompt_words & set_words and not prompt_words & enable_words
+                                       and not prompt_words & disable_words and not has_turn_on
+                                       and not has_turn_off and value_match is None):
+        # Check/read the parameter
+        return {
+            "description": f"Check sysctl parameter {param}",
+            "category": "kernel",
+            "commands": [f"sysctl {param}"],
+            "risk_level": "low",
+            "requires_reboot": False,
+            "notes": "",
+        }
+
+    if has_turn_off or (prompt_words & disable_words and not has_turn_on):
+        value = "0"
+    elif has_turn_on or (prompt_words & enable_words and value_match is None):
+        value = "1"
+    elif value_match:
+        value = value_match.group(1)
+    else:
+        # Default to checking if we can't determine the action
+        return {
+            "description": f"Check sysctl parameter {param}",
+            "category": "kernel",
+            "commands": [f"sysctl {param}"],
+            "risk_level": "low",
+            "requires_reboot": False,
+            "notes": "",
+        }
+
+    # Determine persistence file based on parameter namespace
+    namespace = param.split(".")[0]
+    conf_file = f"/etc/sysctl.d/99-{namespace}.conf"
+
+    return {
+        "description": f"Set {param} = {value} (runtime + persistent)",
+        "category": "kernel",
+        "commands": [
+            f"sysctl -w {param}={value}",
+            f"echo '{param} = {value}' >> {conf_file}",
+        ],
+        "risk_level": "medium",
+        "requires_reboot": False,
+        "notes": f"Runtime change is immediate. Persistent via {conf_file}.",
+    }
+
+
 def match_local_command(prompt):
     """Match a user prompt against local command definitions using keyword scoring.
 
-    Uses synonym expansion and weighted scoring: specific keywords (like
-    'kdump', 'selinux', 'hugepages') are worth more than generic action
-    words (like 'enable', 'check', 'disable').
+    First tries dynamic sysctl matching for any sysctl parameter. Then falls
+    back to static keyword matching with synonym expansion and weighted scoring.
 
     Returns the best matching command definition as a dict matching the AI
     response JSON format, or None if no good match is found.
     """
+    # Try dynamic sysctl matching first
+    sysctl_result = _match_sysctl(prompt)
+    if sysctl_result:
+        return sysctl_result
+
     prompt_lower = prompt.lower()
     prompt_words = set(prompt_lower.split())
     expanded_words = _expand_prompt(prompt_words, prompt_lower)
