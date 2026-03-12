@@ -657,7 +657,7 @@ LOCAL_COMMANDS = [
     },
     # Logging
     {
-        "keywords": ["check", "journal", "logs", "journalctl"],
+        "keywords": ["check", "system", "logs", "journal", "journalctl"],
         "description": "Check recent system journal logs",
         "category": "logging",
         "commands": ["journalctl -xe --no-pager | tail -50"],
