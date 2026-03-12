@@ -65,7 +65,9 @@ def execute_commands(commands, dry_run=False, skip_confirm=False, risk_level="me
 
         try:
             result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, timeout=120
+                cmd, shell=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True, timeout=120
             )
             if result.returncode == 0:
                 print(f"    {color('[OK]', 'green')}")

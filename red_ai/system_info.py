@@ -22,7 +22,8 @@ def get_system_info():
 
     try:
         result = subprocess.run(
-            ["getenforce"], capture_output=True, text=True, timeout=5
+            ["getenforce"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True, timeout=5
         )
         info["selinux"] = result.stdout.strip() if result.returncode == 0 else "unknown"
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -31,7 +32,8 @@ def get_system_info():
     try:
         result = subprocess.run(
             ["systemctl", "is-active", "firewalld"],
-            capture_output=True, text=True, timeout=5,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True, timeout=5,
         )
         info["firewalld"] = result.stdout.strip()
     except (FileNotFoundError, subprocess.TimeoutExpired):

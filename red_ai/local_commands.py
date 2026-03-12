@@ -1772,6 +1772,44 @@ LOCAL_COMMANDS = [
 ]
 
 
+# Common misspellings mapped to the correct word
+TYPO_CORRECTIONS = {
+    # disable
+    "disabel": "disable", "disble": "disable", "diasble": "disable",
+    "disbale": "disable", "disabke": "disable", "diable": "disable",
+    "dissable": "disable", "desable": "disable", "disalbe": "disable",
+    # enable
+    "enabel": "enable", "enble": "enable", "enbale": "enable",
+    "enagle": "enable", "anabel": "enable", "emable": "enable",
+    "enavle": "enable", "enabke": "enable",
+    # check
+    "chekc": "check", "chedk": "check", "cehck": "check",
+    "chcek": "check", "ckeck": "check",
+    # configure
+    "confgiure": "configure", "configrue": "configure", "confiugre": "configure",
+    "confgure": "configure", "configuree": "configure",
+    # install
+    "insatll": "install", "instal": "install", "isntall": "install",
+    "intall": "install", "intsall": "install",
+    # restart
+    "restat": "restart", "retart": "restart", "restrat": "restart",
+    "resatrt": "restart",
+    # remove
+    "remvoe": "remove", "reomve": "remove", "rmove": "remove",
+    # create
+    "craete": "create", "cretae": "create", "cearte": "create",
+    # set
+    "ste": "set", "est": "set",
+    # show
+    "shwo": "show", "hsow": "show",
+    # list
+    "lsit": "list", "lits": "list",
+    # start
+    "strat": "start", "satrt": "start", "statr": "start",
+    # stop
+    "sotp": "stop", "stpo": "stop",
+}
+
 # Synonyms: map common words to the keywords used in command definitions
 SYNONYMS = {
     "enable": ["enable", "configure", "setup", "start", "activate", "turn"],
@@ -1823,25 +1861,36 @@ PHRASE_MAP = {
 }
 
 
+def _correct_typos(prompt_words):
+    """Fix common misspellings in prompt words."""
+    corrected = set()
+    for word in prompt_words:
+        corrected.add(TYPO_CORRECTIONS.get(word, word))
+    return corrected
+
+
 def _expand_prompt(prompt_words, prompt_lower):
-    """Expand prompt words with synonyms and phrase matching."""
-    expanded = set(prompt_words)
+    """Correct typos, then expand prompt words with synonyms and phrase matching."""
+    # Fix typos first
+    corrected = _correct_typos(prompt_words)
+    expanded = set(corrected)
+
+    # Rebuild prompt_lower with corrections for phrase matching
+    corrected_lower = prompt_lower
+    for typo, fix in TYPO_CORRECTIONS.items():
+        if typo in corrected_lower:
+            corrected_lower = corrected_lower.replace(typo, fix)
 
     # Handle multi-word phrases first
     for phrase, keyword in PHRASE_MAP.items():
-        if phrase in prompt_lower:
+        if phrase in corrected_lower:
             expanded.add(keyword)
-            # Remove conflicting expansions (e.g. "turn" alone)
-            for pword in phrase.split():
-                if pword in SYNONYMS:
-                    # Only keep synonyms that agree with the phrase direction
-                    pass
 
     # Expand single-word synonyms
-    for word in list(prompt_words):
+    for word in list(corrected):
         if word in SYNONYMS:
             # If "turn" is part of "turn on/off", skip its ambiguous expansion
-            if word == "turn" and ("turn on" in prompt_lower or "turn off" in prompt_lower):
+            if word == "turn" and ("turn on" in corrected_lower or "turn off" in corrected_lower):
                 continue
             expanded.update(SYNONYMS[word])
 
@@ -1864,9 +1913,15 @@ def _match_sysctl(prompt):
 
     prompt_lower = prompt.lower().strip()
 
+    # Apply typo corrections to prompt
+    corrected_lower = prompt_lower
+    for typo, fix in TYPO_CORRECTIONS.items():
+        if typo in corrected_lower:
+            corrected_lower = corrected_lower.replace(typo, fix)
+
     # Match sysctl-style parameter names (e.g. kernel.sysrq, vm.swappiness, net.ipv4.ip_forward, fs.file-max)
     param_pattern = r'(kernel\.[\w.:-]+|vm\.[\w.:-]+|net\.[\w.:-]+|fs\.[\w.:-]+|dev\.[\w.:-]+|user\.[\w.:-]+)'
-    param_match = re.search(param_pattern, prompt_lower)
+    param_match = re.search(param_pattern, corrected_lower)
 
     if not param_match:
         return None
@@ -1879,17 +1934,17 @@ def _match_sysctl(prompt):
     disable_words = {"disable", "deactivate", "turn off"}
     set_words = {"set", "change", "modify", "update", "configure"}
 
-    prompt_words = set(prompt_lower.split())
+    prompt_words = _correct_typos(set(corrected_lower.split()))
 
     # Check for "turn on/off" phrases
-    has_turn_on = "turn on" in prompt_lower
-    has_turn_off = "turn off" in prompt_lower
+    has_turn_on = "turn on" in corrected_lower
+    has_turn_off = "turn off" in corrected_lower
 
     # Extract value if present: "to 10", "= 10", "=10", "value 10"
-    value_match = re.search(r'(?:to|=|value)\s*(\S+)', prompt_lower[param_match.end():])
+    value_match = re.search(r'(?:to|=|value)\s*(\S+)', corrected_lower[param_match.end():])
     if not value_match:
         # Also check before param: "set 10 for kernel.xxx" (unlikely but handle)
-        value_match = re.search(r'(?:to|=|value)\s*(\S+)', prompt_lower)
+        value_match = re.search(r'(?:to|=|value)\s*(\S+)', corrected_lower)
         # Filter out the param itself
         if value_match and value_match.group(1) in param:
             value_match = None
@@ -1938,12 +1993,12 @@ def _match_sysctl(prompt):
 
     mode = "both"  # default: runtime + persistent
     for phrase in runtime_only_phrases:
-        if phrase in prompt_lower:
+        if phrase in corrected_lower:
             mode = "runtime"
             break
     if mode == "both":
         for phrase in persistent_only_phrases:
-            if phrase in prompt_lower:
+            if phrase in corrected_lower:
                 mode = "persistent"
                 break
     if mode == "both":
