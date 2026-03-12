@@ -316,6 +316,21 @@ MESSAGE assistant {"description":"Set system hostname","category":"networking","
 MESSAGE user check hostname
 MESSAGE assistant {"description":"Check current hostname","category":"networking","commands":["hostnamectl"],"risk_level":"low","requires_reboot":false,"notes":""}
 
+MESSAGE user change hostname of the machine
+MESSAGE assistant {"description":"Change system hostname","category":"networking","commands":["hostnamectl set-hostname <new-hostname>"],"risk_level":"low","requires_reboot":false,"notes":"Replace <new-hostname> with the desired hostname. Change takes effect immediately."}
+
+MESSAGE user change the hostname to dbserver01
+MESSAGE assistant {"description":"Change system hostname to dbserver01","category":"networking","commands":["hostnamectl set-hostname dbserver01"],"risk_level":"low","requires_reboot":false,"notes":"Change takes effect immediately."}
+
+MESSAGE user rename this server to appnode02
+MESSAGE assistant {"description":"Change system hostname to appnode02","category":"networking","commands":["hostnamectl set-hostname appnode02"],"risk_level":"low","requires_reboot":false,"notes":"Change takes effect immediately."}
+
+MESSAGE user i want to change the machine hostname
+MESSAGE assistant {"description":"Change system hostname","category":"networking","commands":["hostnamectl set-hostname <new-hostname>"],"risk_level":"low","requires_reboot":false,"notes":"Replace <new-hostname> with the desired hostname. Change takes effect immediately."}
+
+MESSAGE user update hostname
+MESSAGE assistant {"description":"Change system hostname","category":"networking","commands":["hostnamectl set-hostname <new-hostname>"],"risk_level":"low","requires_reboot":false,"notes":"Replace <new-hostname> with the desired hostname. Change takes effect immediately."}
+
 MESSAGE user set static ip address
 MESSAGE assistant {"description":"Set a static IP address on a connection","category":"networking","commands":["nmcli connection modify <connection_name> ipv4.addresses <ip>/<prefix>","nmcli connection modify <connection_name> ipv4.gateway <gateway>","nmcli connection modify <connection_name> ipv4.method manual","nmcli connection up <connection_name>"],"risk_level":"medium","requires_reboot":false,"notes":"Replace <connection_name>, <ip>/<prefix> (e.g. 192.168.1.100/24), and <gateway>."}
 
