@@ -5,7 +5,7 @@ import sys
 
 from . import __version__
 from .ai_engine import get_ai_response
-from .executor import execute_commands, color
+from .executor import execute_commands, color, prompt_choice
 from .logger import log_execution
 from .system_info import get_system_info, format_system_context
 
@@ -91,6 +91,40 @@ def main():
     risk_level = response.get("risk_level", "medium")
     requires_reboot = response.get("requires_reboot", False)
     notes = response.get("notes", "")
+
+    # If this is a sysctl change, prompt for persistence mode
+    if response.get("persist_mode") == "ask":
+        param = response["sysctl_param"]
+        value = response["sysctl_value"]
+        conf_file = response["sysctl_conf"]
+
+        mode = prompt_choice(
+            "How should this change be applied?",
+            [
+                {"label": "Runtime + Persistent (recommended)", "value": "both"},
+                {"label": "Runtime only (lost after reboot)", "value": "runtime"},
+                {"label": "Persistent only (apply on next reboot or sysctl -p)", "value": "persistent"},
+            ],
+        )
+
+        if mode == "runtime":
+            commands = [f"sysctl -w {param}={value}"]
+            description = f"Set {param} = {value} (runtime only)"
+            notes = "Runtime only. This change will be lost after reboot."
+        elif mode == "persistent":
+            commands = [
+                f"echo '{param} = {value}' >> {conf_file}",
+                f"sysctl -p {conf_file}",
+            ]
+            description = f"Set {param} = {value} (persistent)"
+            notes = f"Persistent via {conf_file}. Applied immediately with sysctl -p."
+        else:
+            commands = [
+                f"sysctl -w {param}={value}",
+                f"echo '{param} = {value}' >> {conf_file}",
+            ]
+            description = f"Set {param} = {value} (runtime + persistent)"
+            notes = f"Runtime change is immediate. Persistent via {conf_file}."
 
     if notes:
         print(f"\n{color('Notes:', 'yellow')} {notes}")

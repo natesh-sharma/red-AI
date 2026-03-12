@@ -1980,72 +1980,22 @@ def _match_sysctl(prompt):
             "notes": "",
         }
 
-    # Determine persistence mode from prompt
-    # "temporary", "runtime", "non-persistent", "until reboot" = runtime only
-    # "persistent", "permanent", "survive reboot", "across reboots", "persist" = persistent only
-    # Default (no keyword) = both runtime + persistent
-    runtime_only_words = {"temporary", "temporarily", "runtime", "non-persistent", "nonpersistent"}
-    persistent_only_words = {"persistent", "permanently", "permanent", "persist"}
-    runtime_only_phrases = ["until reboot", "non-persistent", "runtime only", "not persistent",
-                            "without persist", "no persist"]
-    persistent_only_phrases = ["survive reboot", "across reboot", "after reboot",
-                               "persist across", "persistent only"]
-
-    mode = "both"  # default: runtime + persistent
-    for phrase in runtime_only_phrases:
-        if phrase in corrected_lower:
-            mode = "runtime"
-            break
-    if mode == "both":
-        for phrase in persistent_only_phrases:
-            if phrase in corrected_lower:
-                mode = "persistent"
-                break
-    if mode == "both":
-        if prompt_words & runtime_only_words:
-            mode = "runtime"
-        elif prompt_words & persistent_only_words:
-            mode = "persistent"
-
-    # Build commands based on mode
+    # Return with persist_mode=ask so CLI prompts the user
     namespace = param.split(".")[0]
     conf_file = f"/etc/sysctl.d/99-{namespace}.conf"
 
-    if mode == "runtime":
-        return {
-            "description": f"Set {param} = {value} (runtime only, will not survive reboot)",
-            "category": "kernel",
-            "commands": [
-                f"sysctl -w {param}={value}",
-            ],
-            "risk_level": "medium",
-            "requires_reboot": False,
-            "notes": "Runtime only. This change will be lost after reboot.",
-        }
-    elif mode == "persistent":
-        return {
-            "description": f"Set {param} = {value} (persistent, takes effect after reboot or sysctl -p)",
-            "category": "kernel",
-            "commands": [
-                f"echo '{param} = {value}' >> {conf_file}",
-                f"sysctl -p {conf_file}",
-            ],
-            "risk_level": "medium",
-            "requires_reboot": False,
-            "notes": f"Persistent via {conf_file}. Applied immediately with sysctl -p.",
-        }
-    else:
-        return {
-            "description": f"Set {param} = {value} (runtime + persistent)",
-            "category": "kernel",
-            "commands": [
-                f"sysctl -w {param}={value}",
-                f"echo '{param} = {value}' >> {conf_file}",
-            ],
-            "risk_level": "medium",
-            "requires_reboot": False,
-            "notes": f"Runtime change is immediate. Persistent via {conf_file}.",
-        }
+    return {
+        "description": f"Set {param} = {value}",
+        "category": "kernel",
+        "commands": [f"sysctl -w {param}={value}"],
+        "risk_level": "medium",
+        "requires_reboot": False,
+        "notes": "",
+        "persist_mode": "ask",
+        "sysctl_param": param,
+        "sysctl_value": value,
+        "sysctl_conf": conf_file,
+    }
 
 
 def match_local_command(prompt):

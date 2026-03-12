@@ -24,6 +24,23 @@ def confirm(message):
         return False
 
 
+def prompt_choice(message, options):
+    """Prompt user to choose from numbered options. Returns the chosen option string."""
+    print(color(f"\n{message}", "yellow"))
+    for i, opt in enumerate(options, 1):
+        print(f"  {color(str(i), 'cyan')}. {opt['label']}")
+    try:
+        choice = input(color("\nEnter choice [1]: ", "yellow")).strip()
+        if not choice:
+            return options[0]["value"]
+        idx = int(choice) - 1
+        if 0 <= idx < len(options):
+            return options[idx]["value"]
+    except (ValueError, EOFError, KeyboardInterrupt):
+        print()
+    return options[0]["value"]
+
+
 def execute_commands(commands, dry_run=False, skip_confirm=False, risk_level="medium",
                      description="", requires_reboot=False):
     results = []
