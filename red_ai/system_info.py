@@ -2,6 +2,8 @@ import os
 import platform
 import subprocess
 
+_cached_system_info = None
+
 
 def get_rhel_version():
     try:
@@ -12,6 +14,10 @@ def get_rhel_version():
 
 
 def get_system_info():
+    global _cached_system_info
+    if _cached_system_info is not None:
+        return _cached_system_info
+
     info = {
         "hostname": platform.node(),
         "kernel": platform.release(),
@@ -39,6 +45,7 @@ def get_system_info():
     except (FileNotFoundError, subprocess.TimeoutExpired):
         info["firewalld"] = "unknown"
 
+    _cached_system_info = info
     return info
 
 
