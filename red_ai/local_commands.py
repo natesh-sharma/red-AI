@@ -1897,11 +1897,35 @@ def _expand_prompt(prompt_words, prompt_lower):
     return expanded
 
 
+SYSCTL_SHORTHANDS = {
+    "swappiness": "vm.swappiness",
+    "ip_forward": "net.ipv4.ip_forward",
+    "ip forward": "net.ipv4.ip_forward",
+    "ipforward": "net.ipv4.ip_forward",
+    "sysrq": "kernel.sysrq",
+    "pid_max": "kernel.pid_max",
+    "pid max": "kernel.pid_max",
+    "shmmax": "kernel.shmmax",
+    "shmall": "kernel.shmall",
+    "shmmni": "kernel.shmmni",
+    "file-max": "fs.file-max",
+    "file max": "fs.file-max",
+    "somaxconn": "net.core.somaxconn",
+    "tcp_syncookies": "net.ipv4.tcp_syncookies",
+    "icmp_echo_ignore_all": "net.ipv4.icmp_echo_ignore_all",
+    "panic": "kernel.panic",
+    "overcommit_memory": "vm.overcommit_memory",
+    "dirty_ratio": "vm.dirty_ratio",
+    "dirty_background_ratio": "vm.dirty_background_ratio",
+}
+
+
 def _match_sysctl(prompt):
     """Detect sysctl parameter patterns and generate dynamic commands.
 
     Handles prompts like:
       - "set vm.swappiness to 10"
+      - "set swappiness to 10"
       - "change net.ipv4.ip_forward to 1"
       - "check kernel.pid_max"
       - "show vm.swappiness"
@@ -1918,6 +1942,11 @@ def _match_sysctl(prompt):
     for typo, fix in TYPO_CORRECTIONS.items():
         if typo in corrected_lower:
             corrected_lower = corrected_lower.replace(typo, fix)
+
+    # Expand shorthand parameter names before matching
+    for shorthand, full_param in SYSCTL_SHORTHANDS.items():
+        if shorthand in corrected_lower:
+            corrected_lower = corrected_lower.replace(shorthand, full_param)
 
     # Match sysctl-style parameter names (e.g. kernel.sysrq, vm.swappiness, net.ipv4.ip_forward, fs.file-max)
     param_pattern = r'(kernel\.[\w.:-]+|vm\.[\w.:-]+|net\.[\w.:-]+|fs\.[\w.:-]+|dev\.[\w.:-]+|user\.[\w.:-]+)'
