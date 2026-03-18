@@ -98,3 +98,35 @@ def log_execution(prompt, commands, results, dry_run=False,
             f.write("\n".join(lines) + "\n")
     except PermissionError:
         pass
+
+
+def read_history(count=10):
+    """Read the last N execution entries from the log file.
+
+    Returns a list of raw log entry strings (most recent last).
+    """
+    log_files = [LOG_FILE]
+    for i in range(1, MAX_LOG_FILES + 1):
+        rotated = f"{LOG_FILE}.{i}"
+        if os.path.exists(rotated):
+            log_files.append(rotated)
+
+    entries = []
+    for lf in log_files:
+        if not os.path.exists(lf):
+            continue
+        try:
+            with open(lf, "r") as f:
+                content = f.read()
+        except (PermissionError, IOError):
+            continue
+
+        # Split on the separator line
+        parts = content.split("=" * 70)
+        # Each entry uses two separator lines, so entries are at odd indices
+        for i in range(1, len(parts) - 1, 2):
+            entry = "=" * 70 + parts[i] + "=" * 70
+            entries.append(entry)
+
+    # Return last N entries (most recent last)
+    return entries[-count:]

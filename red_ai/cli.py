@@ -6,7 +6,7 @@ import sys
 from . import __version__
 from .ai_engine import get_ai_response
 from .executor import execute_commands, color, prompt_choice
-from .logger import log_execution
+from .logger import log_execution, read_history
 from .system_info import get_system_info, format_system_context
 
 
@@ -44,6 +44,8 @@ def main():
     parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompts")
     parser.add_argument("-v", "--version", action="store_true", help="Show version")
     parser.add_argument("-i", "--info", action="store_true", help="Show system information")
+    parser.add_argument("--history", nargs="?", const=10, type=int, metavar="N",
+                        help="Show last N executions (default: 10)")
 
     args = parser.parse_args()
 
@@ -56,6 +58,17 @@ def main():
         info = get_system_info()
         print(color("System Information:", "blue"))
         print(format_system_context(info))
+        return 0
+
+    if args.history is not None:
+        print(BANNER)
+        entries = read_history(args.history)
+        if not entries:
+            print(color("No execution history found.", "yellow"))
+            return 0
+        print(color(f"Last {len(entries)} execution(s):\n", "blue"))
+        for entry in entries:
+            print(entry)
         return 0
 
     if not args.prompt:
