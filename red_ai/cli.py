@@ -91,6 +91,69 @@ def main():
 
     response = get_response(prompt)
 
+    # If intent is unclear, ask the user what they want to do
+    if response.get("ask_action"):
+        param = response["sysctl_param"]
+        print(color(f"\nDetected sysctl parameter: {param}", "blue"))
+        print(color("Could not determine the intended action.", "yellow"))
+        action = prompt_choice(
+            "What would you like to do with {}?".format(param),
+            [
+                {"label": "Check current value", "value": "check"},
+                {"label": "Enable (set to 1)", "value": "enable"},
+                {"label": "Disable (set to 0)", "value": "disable"},
+                {"label": "Set to a specific value", "value": "set"},
+            ],
+        )
+        if action == "check":
+            response = {
+                "description": "Check sysctl parameter {}".format(param),
+                "category": "kernel",
+                "commands": ["sysctl {}".format(param)],
+                "risk_level": "low",
+                "requires_reboot": False,
+                "notes": "",
+                "source": "local_commands",
+            }
+        elif action == "set":
+            try:
+                value = input(color("Enter value for {}: ".format(param), "yellow")).strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                return 1
+            if not value:
+                print(color("No value provided.", "red"))
+                return 1
+            response = {
+                "description": "Set {} = {}".format(param, value),
+                "category": "kernel",
+                "commands": ["sysctl -w {}={}".format(param, value)],
+                "risk_level": "medium",
+                "requires_reboot": False,
+                "notes": "",
+                "source": "local_commands",
+                "persist_mode": "ask",
+                "sysctl_param": param,
+                "sysctl_value": value,
+                "sysctl_conf": "/etc/sysctl.d/99-{}.conf".format(param.split(".")[0]),
+            }
+        else:
+            value = "1" if action == "enable" else "0"
+            response = {
+                "description": "{} {} (set to {})".format(
+                    "Enable" if action == "enable" else "Disable", param, value),
+                "category": "kernel",
+                "commands": ["sysctl -w {}={}".format(param, value)],
+                "risk_level": "medium",
+                "requires_reboot": False,
+                "notes": "",
+                "source": "local_commands",
+                "persist_mode": "ask",
+                "sysctl_param": param,
+                "sysctl_value": value,
+                "sysctl_conf": "/etc/sysctl.d/99-{}.conf".format(param.split(".")[0]),
+            }
+
     if "error" in response:
         print(color(f"\n{response['error']}", "red"))
         return 1

@@ -1778,6 +1778,7 @@ TYPO_CORRECTIONS = {
     "disabel": "disable", "disble": "disable", "diasble": "disable",
     "disbale": "disable", "disabke": "disable", "diable": "disable",
     "dissable": "disable", "desable": "disable", "disalbe": "disable",
+    "disamble": "disable", "disaable": "disable", "dsiable": "disable",
     # enable
     "enabel": "enable", "enble": "enable", "enbale": "enable",
     "enagle": "enable", "anabel": "enable", "emable": "enable",
@@ -1979,14 +1980,11 @@ def _match_sysctl(prompt):
             value_match = None
 
     # Determine action
-    if prompt_words & check_words or (not prompt_words & set_words and not prompt_words & enable_words
-                                       and not prompt_words & disable_words and not has_turn_on
-                                       and not has_turn_off and value_match is None):
-        # Check/read the parameter
+    if prompt_words & check_words:
         return {
-            "description": f"Check sysctl parameter {param}",
+            "description": "Check sysctl parameter {}".format(param),
             "category": "kernel",
-            "commands": [f"sysctl {param}"],
+            "commands": ["sysctl {}".format(param)],
             "risk_level": "low",
             "requires_reboot": False,
             "notes": "",
@@ -1998,15 +1996,17 @@ def _match_sysctl(prompt):
         value = "1"
     elif value_match:
         value = value_match.group(1)
-    else:
-        # Default to checking if we can't determine the action
+    elif prompt_words & set_words:
+        # User wants to set but didn't provide a value — ask them
         return {
-            "description": f"Check sysctl parameter {param}",
-            "category": "kernel",
-            "commands": [f"sysctl {param}"],
-            "risk_level": "low",
-            "requires_reboot": False,
-            "notes": "",
+            "ask_action": True,
+            "sysctl_param": param,
+        }
+    else:
+        # Can't determine intent — ask the user what they want
+        return {
+            "ask_action": True,
+            "sysctl_param": param,
         }
 
     # Return with persist_mode=ask so CLI prompts the user
