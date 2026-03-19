@@ -257,13 +257,24 @@ LOCAL_COMMANDS = [
         "description": "Configure and enable kdump crash recovery",
         "category": "kernel",
         "commands": [
-            "yum install -y kexec-tools",
-            "systemctl enable kdump",
-            "systemctl start kdump",
+            "kdump_preflight",
         ],
         "risk_level": "medium",
         "requires_reboot": False,
-        "notes": "Kdump requires reserved memory. Check /etc/kdump.conf for settings.",
+        "notes": "Will verify prerequisites before enabling kdump.",
+        "_handler": "kdump_enable",
+    },
+    {
+        "keywords": ["enable", "kdump"],
+        "description": "Enable kdump crash recovery",
+        "category": "kernel",
+        "commands": [
+            "kdump_preflight",
+        ],
+        "risk_level": "medium",
+        "requires_reboot": False,
+        "notes": "Will verify prerequisites before enabling kdump.",
+        "_handler": "kdump_enable",
     },
     {
         "keywords": ["disable", "kdump"],
@@ -2091,7 +2102,7 @@ def match_local_command(prompt):
     if best_score < 0.3 or best_hits < 2:
         return None
 
-    return {
+    result = {
         "description": best_match["description"],
         "category": best_match["category"],
         "commands": list(best_match["commands"]),
@@ -2099,3 +2110,6 @@ def match_local_command(prompt):
         "requires_reboot": best_match["requires_reboot"],
         "notes": best_match.get("notes", ""),
     }
+    if "_handler" in best_match:
+        result["_handler"] = best_match["_handler"]
+    return result

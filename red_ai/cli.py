@@ -34,6 +34,125 @@ def get_response(prompt):
     return get_ai_response(prompt)
 
 
+def _handle_kdump_enable(dry_run):
+    """Verify kdump prerequisites before enabling.
+
+    Checks crashkernel boot param, kexec-tools package, and current
+    kdump status. Returns a response dict with the appropriate commands,
+    or None if the user aborts.
+    """
+    import subprocess
+
+    print(color("\nRunning kdump preflight checks...", "blue"))
+    checks = []
+    commands = []
+    needs_reboot = False
+
+    # Check 1: crashkernel boot parameter
+    try:
+        with open("/proc/cmdline") as f:
+            cmdline = f.read()
+        has_crashkernel = "crashkernel=" in cmdline
+    except (IOError, OSError):
+        has_crashkernel = False
+
+    if has_crashkernel:
+        checks.append(("crashkernel boot parameter", True, "configured"))
+    else:
+        checks.append(("crashkernel boot parameter", False, "NOT configured"))
+        commands.append("grubby --update-kernel=ALL --args='crashkernel=auto'")
+        needs_reboot = True
+
+    # Check 2: kexec-tools installed
+    try:
+        result = subprocess.run(
+            ["rpm", "-q", "kexec-tools"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True, timeout=5,
+        )
+        has_kexec = result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        has_kexec = False
+
+    if has_kexec:
+        checks.append(("kexec-tools package", True, "installed"))
+    else:
+        checks.append(("kexec-tools package", False, "NOT installed"))
+        commands.append("yum install -y kexec-tools")
+
+    # Check 3: kdump service status
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", "kdump"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True, timeout=5,
+        )
+        kdump_active = result.stdout.strip() == "active"
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        kdump_active = False
+
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-enabled", "kdump"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True, timeout=5,
+        )
+        kdump_enabled = result.stdout.strip() == "enabled"
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        kdump_enabled = False
+
+    if kdump_active and kdump_enabled:
+        checks.append(("kdump service", True, "active and enabled"))
+    else:
+        status_parts = []
+        if not kdump_enabled:
+            status_parts.append("not enabled")
+            commands.append("systemctl enable kdump")
+        if not kdump_active:
+            status_parts.append("not active")
+            commands.append("systemctl start kdump")
+        checks.append(("kdump service", False, ", ".join(status_parts)))
+
+    # Display preflight results
+    print(color("\nPreflight Check Results:", "blue"))
+    for name, passed, detail in checks:
+        icon = color("[PASS]", "green") if passed else color("[FAIL]", "red")
+        print("  {} {} - {}".format(icon, name, detail))
+
+    if not commands:
+        print(color("\nkdump is already properly configured and running.", "green"))
+        return {"commands": [], "description": "kdump already configured"}
+
+    if needs_reboot:
+        print(color("\nWARNING: crashkernel parameter requires a reboot to take effect.", "yellow"))
+
+    if dry_run:
+        return {
+            "description": "Configure and enable kdump crash recovery",
+            "category": "kernel",
+            "commands": commands,
+            "risk_level": "medium",
+            "requires_reboot": needs_reboot,
+            "notes": "Reboot required for crashkernel." if needs_reboot else "",
+            "source": "local_commands",
+        }
+
+    from .executor import confirm
+    if not confirm("\nProceed with kdump configuration?"):
+        print(color("Aborted.", "yellow"))
+        return None
+
+    return {
+        "description": "Configure and enable kdump crash recovery",
+        "category": "kernel",
+        "commands": commands,
+        "risk_level": "medium",
+        "requires_reboot": needs_reboot,
+        "notes": "Reboot required for crashkernel." if needs_reboot else "",
+        "source": "local_commands",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="red-ai",
@@ -153,6 +272,12 @@ def main():
                 "sysctl_value": value,
                 "sysctl_conf": "/etc/sysctl.d/99-{}.conf".format(param.split(".")[0]),
             }
+
+    # Handle kdump enable with preflight checks
+    if response.get("_handler") == "kdump_enable":
+        response = _handle_kdump_enable(args.dry_run)
+        if response is None:
+            return 1
 
     if "error" in response:
         print(color(f"\n{response['error']}", "red"))
