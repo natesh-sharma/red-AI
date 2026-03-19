@@ -7,7 +7,7 @@ from . import __version__
 from .ai_engine import get_ai_response
 from .executor import execute_commands, color, prompt_choice
 from .logger import log_execution, read_history
-from .system_info import get_system_info, format_system_context
+from .system_info import get_system_info, format_system_context, get_rhel_major_version
 
 
 def _build_banner():
@@ -60,7 +60,12 @@ def _handle_kdump_enable(dry_run):
         checks.append(("crashkernel boot parameter", True, "configured"))
     else:
         checks.append(("crashkernel boot parameter", False, "NOT configured"))
-        commands.append("grubby --update-kernel=ALL --args='crashkernel=auto'")
+        rhel_major = get_rhel_major_version()
+        if rhel_major is not None and rhel_major >= 9:
+            crashkernel_val = "1G-4G:192M,4G-64G:256M,64G-:512M"
+        else:
+            crashkernel_val = "auto"
+        commands.append("grubby --update-kernel=ALL --args='crashkernel={}'".format(crashkernel_val))
         needs_reboot = True
 
     # Check 2: kexec-tools installed

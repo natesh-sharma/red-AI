@@ -13,6 +13,17 @@ def get_rhel_version():
         return None
 
 
+def get_rhel_major_version():
+    """Return the RHEL major version as an int, or None if not detectable."""
+    import re
+    version_string = get_rhel_version()
+    if version_string:
+        match = re.search(r'release\s+(\d+)', version_string)
+        if match:
+            return int(match.group(1))
+    return None
+
+
 def get_system_info():
     global _cached_system_info
     if _cached_system_info is not None:

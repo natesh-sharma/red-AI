@@ -717,6 +717,9 @@ MESSAGE assistant {"description":"Add a kernel boot parameter","category":"boot"
 MESSAGE user add crashkernel=256M to boot parameters
 MESSAGE assistant {"description":"Add crashkernel=256M to kernel boot parameters","category":"boot","commands":["grubby --update-kernel=ALL --args='crashkernel=256M'"],"risk_level":"high","requires_reboot":true,"notes":"Takes effect after reboot."}
 
+MESSAGE user set crashkernel for RHEL 9
+MESSAGE assistant {"description":"Set crashkernel with range-based memory reservation for RHEL 9+","category":"boot","commands":["grubby --update-kernel=ALL --args='crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M'"],"risk_level":"high","requires_reboot":true,"notes":"crashkernel=auto is deprecated in RHEL 9+. Use range-based syntax instead. Takes effect after reboot."}
+
 MESSAGE user remove kernel boot parameter
 MESSAGE assistant {"description":"Remove a kernel boot parameter","category":"boot","commands":["grubby --update-kernel=ALL --remove-args='<parameter>'"],"risk_level":"high","requires_reboot":true,"notes":"Replace <parameter>. Takes effect after reboot."}
 
