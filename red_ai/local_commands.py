@@ -55,6 +55,15 @@ LOCAL_COMMANDS = [
         "notes": "",
     },
     {
+        "keywords": ["check", "kernel", "version", "uname"],
+        "description": "Check kernel version",
+        "category": "kernel",
+        "commands": ["uname -r", "uname -a"],
+        "risk_level": "low",
+        "requires_reboot": False,
+        "notes": "",
+    },
+    {
         "keywords": ["sysctl", "kernel", "parameters"],
         "description": "Show all sysctl kernel parameters",
         "category": "kernel",
@@ -477,6 +486,15 @@ LOCAL_COMMANDS = [
     },
     # Services
     {
+        "keywords": ["check", "status", "sshd", "ssh"],
+        "description": "Check sshd service status",
+        "category": "services",
+        "commands": ["systemctl status sshd"],
+        "risk_level": "low",
+        "requires_reboot": False,
+        "notes": "",
+    },
+    {
         "keywords": ["list", "services", "running"],
         "description": "List all running services",
         "category": "services",
@@ -539,6 +557,28 @@ LOCAL_COMMANDS = [
         "risk_level": "low",
         "requires_reboot": False,
         "notes": "Second command shows only regular (non-system) users.",
+    },
+    {
+        "keywords": ["show", "who", "logged", "in", "users"],
+        "description": "Show who is logged in",
+        "category": "users",
+        "commands": ["who", "w", "last -n 10"],
+        "risk_level": "low",
+        "requires_reboot": False,
+        "notes": "",
+    },
+    {
+        "keywords": ["check", "sudo", "wheel", "sudoers", "users"],
+        "description": "Show sudo/wheel group users",
+        "category": "users",
+        "commands": [
+            "getent group wheel",
+            "cat /etc/sudoers | grep -v '^#' | grep -v '^$'",
+            "ls -la /etc/sudoers.d/",
+        ],
+        "risk_level": "low",
+        "requires_reboot": False,
+        "notes": "",
     },
     {
         "keywords": ["check", "password", "policy", "aging"],
@@ -684,6 +724,15 @@ LOCAL_COMMANDS = [
             "systemctl status rsyslog",
             "cat /etc/rsyslog.conf",
         ],
+        "risk_level": "low",
+        "requires_reboot": False,
+        "notes": "",
+    },
+    {
+        "keywords": ["show", "kernel", "messages", "dmesg"],
+        "description": "Show kernel messages (dmesg)",
+        "category": "logging",
+        "commands": ["dmesg | tail -50"],
         "risk_level": "low",
         "requires_reboot": False,
         "notes": "",
@@ -1592,6 +1641,29 @@ LOCAL_COMMANDS = [
     },
     # Performance - additional
     {
+        "keywords": ["show", "cpu", "usage", "utilization"],
+        "description": "Show CPU usage",
+        "category": "performance",
+        "commands": [
+            "top -bn1 | head -15",
+            "mpstat 1 3 2>/dev/null || sar -u 1 3 2>/dev/null || ps aux --sort=-%cpu | head -10",
+        ],
+        "risk_level": "low",
+        "requires_reboot": False,
+        "notes": "",
+    },
+    {
+        "keywords": ["show", "disk", "io", "statistics", "iostat"],
+        "description": "Show disk I/O statistics",
+        "category": "performance",
+        "commands": [
+            "iostat -xz 1 3 2>/dev/null || vmstat 1 3",
+        ],
+        "risk_level": "low",
+        "requires_reboot": False,
+        "notes": "Install sysstat package for iostat if not available.",
+    },
+    {
         "keywords": ["check", "cpu", "info", "processor"],
         "description": "Check CPU information",
         "category": "performance",
@@ -1805,13 +1877,15 @@ TYPO_CORRECTIONS = {
     "intall": "install", "intsall": "install",
     # restart
     "restat": "restart", "retart": "restart", "restrat": "restart",
-    "resatrt": "restart",
+    "resatrt": "restart", "restarrt": "restart",
     # remove
     "remvoe": "remove", "reomve": "remove", "rmove": "remove",
     # create
     "craete": "create", "cretae": "create", "cearte": "create",
     # set
     "ste": "set", "est": "set",
+    # status
+    "statsu": "status", "stauts": "status", "staus": "status",
     # show
     "shwo": "show", "hsow": "show",
     # list
@@ -2038,6 +2112,53 @@ def _match_sysctl(prompt):
     }
 
 
+def _substitute_placeholders(commands, notes, prompt_words, keywords):
+    """Replace <placeholder> tokens in commands with values from the user prompt.
+
+    Extracts 'extra' words from the prompt (words not in the command's keywords,
+    not generic action words, and not common filler) and substitutes them into
+    placeholders like <service_name>, <package_name>, <port>, etc.
+    """
+    import re
+
+    # Check if any command has a placeholder
+    has_placeholder = any(re.search(r'<\w+>', cmd) for cmd in commands)
+    if not has_placeholder:
+        return commands, notes
+
+    # Words to ignore when extracting the user's target value
+    filler_words = GENERIC_KEYWORDS | {
+        "the", "a", "an", "to", "for", "on", "off", "my", "is", "of",
+        "all", "this", "that", "please", "current", "now", "and", "or",
+        "me", "with", "from", "in", "it", "its",
+    }
+    # Also ignore the command's own keywords
+    ignore = filler_words | set(keywords)
+
+    # Expand synonyms back to ignore them too
+    for word in list(ignore):
+        if word in SYNONYMS:
+            ignore.update(SYNONYMS[word])
+
+    # Extract candidate values from the prompt
+    candidates = [w for w in prompt_words if w not in ignore]
+
+    if not candidates:
+        return commands, notes
+
+    # Use the first candidate as the primary value
+    value = candidates[0]
+
+    # Replace all placeholders with the extracted value
+    new_commands = []
+    for cmd in commands:
+        new_commands.append(re.sub(r'<\w+>', value, cmd))
+
+    new_notes = re.sub(r'Replace <\w+>[^.]*\.?\s*', '', notes).strip()
+
+    return new_commands, new_notes
+
+
 def match_local_command(prompt):
     """Match a user prompt against local command definitions using keyword scoring.
 
@@ -2102,13 +2223,21 @@ def match_local_command(prompt):
     if best_score < 0.3 or best_hits < 2:
         return None
 
+    commands = list(best_match["commands"])
+    notes = best_match.get("notes", "")
+
+    # Substitute placeholders with values extracted from the prompt
+    commands, notes = _substitute_placeholders(
+        commands, notes, prompt_words, best_match["keywords"]
+    )
+
     result = {
         "description": best_match["description"],
         "category": best_match["category"],
-        "commands": list(best_match["commands"]),
+        "commands": commands,
         "risk_level": best_match["risk_level"],
         "requires_reboot": best_match["requires_reboot"],
-        "notes": best_match.get("notes", ""),
+        "notes": notes,
     }
     if "_handler" in best_match:
         result["_handler"] = best_match["_handler"]
