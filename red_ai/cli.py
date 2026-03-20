@@ -10,24 +10,6 @@ from .logger import log_execution, read_history
 from .system_info import get_system_info, format_system_context, get_rhel_major_version
 
 
-def _build_banner():
-    lines = [
-        "",
-        f"RED-AI Configuration Assistant v{__version__}",
-        "",
-        "AI-powered system configuration tool for RHEL Linux",
-        "Developed by: Natesh Sharma",
-        "",
-    ]
-    inner = max(len(line) for line in lines) + 6
-    top = "╔" + "═" * inner + "╗"
-    bot = "╚" + "═" * inner + "╝"
-    mid = ["║" + line.center(inner) + "║" for line in lines]
-    return "\n" + "\n".join([color(l, "cyan") for l in [top] + mid + [bot]]) + "\n"
-
-
-BANNER = _build_banner()
-
 
 def get_response(prompt):
     """Get AI response for the prompt."""
@@ -174,18 +156,16 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print(BANNER)
+        print(f"red-ai {__version__}")
         return 0
 
     if args.info:
-        print(BANNER)
         info = get_system_info()
         print(color("System Information:", "blue"))
         print(format_system_context(info))
         return 0
 
     if args.history is not None:
-        print(BANNER)
         entries = read_history(args.history)
         if not entries:
             print(color("No execution history found.", "yellow"))
@@ -196,13 +176,10 @@ def main():
         return 0
 
     if not args.prompt:
-        print(BANNER)
         parser.print_help()
         return 1
 
     prompt = " ".join(args.prompt)
-
-    print(BANNER)
 
     # Root check (skip for dry-run)
     if not args.dry_run and os.geteuid() != 0:
