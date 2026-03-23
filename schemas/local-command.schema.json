@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RED-AI Local Command Entry",
+  "description": "Schema for entries in LOCAL_COMMANDS array in local_commands.py",
+  "type": "object",
+  "required": ["keywords", "description", "category", "commands", "risk_level"],
+  "properties": {
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9._-]+$" },
+      "minItems": 1,
+      "description": "Lowercase keywords for matching user queries"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 5,
+      "description": "Human-readable description of the operation"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "kernel", "network", "storage", "security", "services",
+        "users", "packages", "performance", "logging", "monitoring",
+        "boot", "containers", "virtualization", "backup", "system"
+      ],
+      "description": "Command category"
+    },
+    "commands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Ordered shell commands to execute"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Risk classification"
+    },
+    "requires_reboot": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether a reboot is needed"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional context for the user"
+    }
+  },
+  "additionalProperties": false
+}

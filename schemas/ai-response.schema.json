@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RED-AI Response",
+  "description": "Schema for AI engine response format (both local and Ollama)",
+  "type": "object",
+  "required": ["description", "commands", "risk_level"],
+  "properties": {
+    "description": {
+      "type": "string",
+      "description": "What this operation does"
+    },
+    "category": {
+      "type": "string",
+      "description": "Command category"
+    },
+    "commands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Commands to execute"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "requires_reboot": {
+      "type": "boolean",
+      "default": false
+    },
+    "notes": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["local_commands", "ollama", "unknown"]
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message when no match found"
+    }
+  }
+}

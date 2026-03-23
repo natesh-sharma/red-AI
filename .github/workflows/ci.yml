@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.8", "3.9", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Check Python syntax
+        run: |
+          for f in red_ai/*.py tests/*.py; do
+            python -m py_compile "$f"
+          done
+
+      - name: Check imports
+        run: |
+          python -c "from red_ai.cli import main; from red_ai.ai_engine import get_ai_response; from red_ai.local_commands import LOCAL_COMMANDS"
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Scan for hardcoded secrets
+        run: |
+          SECRETS=$(grep -rnE '(password|secret|api_key|token)\s*=' red_ai/*.py 2>/dev/null | grep -vE '(environ|getenv|args\.|#|None|""|'"'"''"'"')' | head -5)
+          if [ -n "$SECRETS" ]; then
+            echo "::warning::Possible hardcoded secrets detected"
+            echo "$SECRETS"
+          fi
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Lint with flake8
+        run: flake8 red_ai/ --max-line-length=120 --ignore=E501,W503

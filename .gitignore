@@ -9,3 +9,59 @@ build/
 *.o
 red-ai
 rhel-ai-tool
+
+# Python
+*.pyo
+*.pyd
+.Python
+*.so
+pip-log.txt
+pip-delete-this-directory.txt
+.eggs/
+*.egg
+MANIFEST
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Secrets / credentials
+*.pem
+*.key
+*.crt
+*.p12
+credentials.json
+secrets.yaml
+secrets.yml
+.env.*
+
+# RPM build artifacts
+rpmbuild/
+SRPMS/
+RPMS/
+SPECS/
+SOURCES/
+BUILD/
+BUILDROOT/
+*.rpm
+
+# Logs
+*.log
+/var/log/red-ai/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
