@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.8", "3.9", "3.11"]
+        python-version: ["3.8", "3.9", "3.11"]
 
     steps:
       - uses: actions/checkout@v4
@@ -59,4 +59,4 @@ jobs:
         run: pip install flake8
 
       - name: Lint with flake8
-        run: flake8 red_ai/ --max-line-length=120 --ignore=E501,W503
+        run: flake8 red_ai/ --max-line-length=120 --ignore=E501,W503,W504

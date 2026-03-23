@@ -1,7 +1,5 @@
 import os
 import pwd
-import json
-import glob
 import datetime
 
 LOG_DIR = "/var/log/red-ai"

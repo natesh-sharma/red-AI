@@ -10,7 +10,6 @@ from .logger import log_execution, read_history
 from .system_info import get_system_info, format_system_context, get_rhel_major_version
 
 
-
 def get_response(prompt):
     """Get AI response for the prompt."""
     return get_ai_response(prompt)
