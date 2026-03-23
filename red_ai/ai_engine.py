@@ -59,7 +59,21 @@ def get_ai_response(prompt):
     except Exception:
         pass
 
-    return {"error": "No matching command found. Install Ollama (https://ollama.ai) for full AI mode, or try rephrasing your request."}
+    return {
+        "error": (
+            "No matching command found locally and Ollama is not available.\n"
+            "\n"
+            "To enable AI mode, set up the RED-AI custom model:\n"
+            "  1. Install Ollama:  curl -fsSL https://ollama.ai/install.sh | sh\n"
+            "  2. Build the model: ollama create red-ai-model -f Modelfile\n"
+            "  3. Verify it works: ollama run red-ai-model \"check kernel version\"\n"
+            "\n"
+            "RED-AI uses its own fine-tuned Modelfile (based on Mistral) with 230+\n"
+            "RHEL-specific training examples. No other models are needed.\n"
+            "\n"
+            "Or try rephrasing your request to match a local command pattern."
+        ),
+    }
 
 
 def _call_ollama(prompt):
