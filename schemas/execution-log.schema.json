@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RED-AI Execution Log Entry",
+  "description": "Schema for entries written to /var/log/red-ai/",
+  "type": "object",
+  "required": ["timestamp", "prompt", "commands", "dry_run"],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the execution occurred"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Original user request"
+    },
+    "commands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Commands that were executed or previewed"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["success", "failed", "skipped", "timeout", "cancelled"]
+          },
+          "return_code": { "type": "integer" },
+          "output": { "type": "string" }
+        }
+      },
+      "description": "Execution results for each command"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "description": "Whether this was a dry-run preview"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["local_commands", "ollama", "unknown"]
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "description": {
+      "type": "string"
+    },
+    "requires_reboot": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

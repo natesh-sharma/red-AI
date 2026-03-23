@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RED-AI CLI Arguments",
+  "description": "Schema for CLI argument combinations and their expected behavior",
+  "type": "object",
+  "properties": {
+    "prompt": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Configuration request words"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": false,
+      "description": "Preview commands without executing"
+    },
+    "yes": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip confirmation prompts"
+    },
+    "info": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show system information"
+    },
+    "history": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "Number of history entries to show"
+    },
+    "version": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show version"
+    }
+  }
+}

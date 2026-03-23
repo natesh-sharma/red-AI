@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RED-AI System Information",
+  "description": "Schema for system info gathered by system_info.py",
+  "type": "object",
+  "properties": {
+    "hostname": {
+      "type": "string"
+    },
+    "kernel": {
+      "type": "string",
+      "description": "Kernel version from uname -r"
+    },
+    "arch": {
+      "type": "string",
+      "description": "System architecture (x86_64, aarch64, etc.)"
+    },
+    "rhel_version": {
+      "type": "string",
+      "description": "Full RHEL version string from /etc/redhat-release"
+    },
+    "is_root": {
+      "type": "boolean",
+      "description": "Whether running as UID 0"
+    },
+    "selinux": {
+      "type": "string",
+      "enum": ["Enforcing", "Permissive", "Disabled", "Unknown"]
+    },
+    "firewalld": {
+      "type": "string",
+      "enum": ["active", "inactive", "Unknown"]
+    }
+  }
+}

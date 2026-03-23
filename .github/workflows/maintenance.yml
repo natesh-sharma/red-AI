@@ -1,0 +1,62 @@
+name: Maintenance
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Weekly on Monday at 6 AM UTC
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Run full validation
+        run: ./scripts/validate.sh
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for hardcoded secrets
+        run: |
+          FOUND=0
+          for f in $(find red_ai/ -name "*.py"); do
+            SECRETS=$(grep -nE '(password|secret|api_key|token)\s*=' "$f" | grep -vE '(environ|getenv|args\.|#|None|""|'"'"''"'"')' | head -5)
+            if [ -n "$SECRETS" ]; then
+              echo "::warning file=$f::Possible hardcoded secret"
+              echo "$SECRETS"
+              FOUND=1
+            fi
+          done
+          if [ "$FOUND" -eq 1 ]; then
+            echo "::error::Hardcoded secrets detected — review findings above"
+            exit 1
+          fi
+
+  stale-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for large files
+        run: |
+          find . -type f -size +1M -not -path './.git/*' -not -path './.venv/*' | while read f; do
+            echo "::warning file=$f::File exceeds 1MB"
+          done
+
+      - name: Check Python 3.6 compatibility
+        run: |
+          if grep -rnE '(:=|f"{|walrus)' red_ai/*.py; then
+            echo "::error::Python 3.6 incompatible syntax found"
+            exit 1
+          fi
