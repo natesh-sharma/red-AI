@@ -1,0 +1,169 @@
+.\" Man page for red-ai
+.\" Copyright (C) 2024 Natesh Sharma
+.\" Licensed under GPL-3.0
+.TH RED-AI 1 "March 2026" "red-ai 2.0.0" "User Commands"
+.SH NAME
+red-ai \- AI-powered RHEL system configuration tool
+.SH SYNOPSIS
+.B red-ai
+[\fIOPTIONS\fR] [\fIPROMPT\fR ...]
+.SH DESCRIPTION
+.B red-ai
+is an AI-powered command-line tool for Red Hat Enterprise Linux (RHEL) system
+administration. Users describe configuration tasks in plain English, and
+.B red-ai
+generates the appropriate Linux commands, previews them for approval, and
+optionally executes them.
+.PP
+The tool uses a local database of 230+ RHEL command patterns for instant
+offline responses. When available, it falls back to an Ollama-hosted LLM
+(Mistral-based) for queries not covered by the local database.
+.PP
+All generated commands are displayed with risk levels (low, medium, high)
+and require explicit confirmation before execution. Every execution is
+logged for auditing purposes.
+.SH OPTIONS
+.TP
+.B PROMPT
+A natural language description of the desired system configuration task.
+Multiple words are joined automatically (no quoting required).
+.sp
+Examples:
+.RS
+.nf
+red-ai disable SELinux
+red-ai set vm.swappiness to 10
+red-ai enable kdump
+red-ai configure NTP with chrony
+.fi
+.RE
+.TP
+.BR \-d ", " \-\-dry\-run
+Preview the generated commands without executing them. Does not require root
+privileges. Useful for reviewing what
+.B red-ai
+would do before running it for real.
+.TP
+.BR \-y ", " \-\-yes
+Skip all confirmation prompts and execute commands immediately. Use with
+caution, especially for high-risk operations. Intended for scripting and
+automation workflows where interactive confirmation is not possible.
+.TP
+.BR \-v ", " \-\-version
+Print the version number and exit.
+.TP
+.BR \-i ", " \-\-info
+Display detected system information including RHEL version, kernel version,
+SELinux status, firewalld status, and other relevant system details. Useful
+for verifying what
+.B red-ai
+knows about the current system.
+.TP
+.BR \-\-history " [\fIN\fR]"
+Show the last
+.I N
+command executions from the audit log (default: 10). Each entry includes the
+original prompt, generated commands, execution results, timestamps, and risk
+levels.
+.SH FEATURES
+.SS Local Command Database
+The built-in database covers 230+ common RHEL administration tasks organized
+by category: networking, storage, security, kernel tuning, services, users,
+packages, firewall, SELinux, NFS, NTP, DNS, kdump, and more.
+.SS Ollama AI Fallback
+When the local database cannot match a request, red-ai queries a locally
+running Ollama instance with a custom Mistral-based model trained on RHEL
+administration patterns. The Ollama service must be running on localhost:11434.
+.SS kdump Preflight Checks
+When enabling kdump, red-ai automatically performs preflight checks:
+.RS
+.IP \(bu 2
+Verifies crashkernel boot parameter is set
+.IP \(bu 2
+Checks that kexec-tools package is installed
+.IP \(bu 2
+Inspects kdump service status (active and enabled)
+.RE
+.PP
+Missing prerequisites are added to the command list automatically.
+.SS Sysctl Persistence
+For sysctl parameter changes, red-ai prompts for the persistence mode:
+.RS
+.IP \(bu 2
+\fBRuntime + Persistent\fR \- applies immediately and survives reboot
+.IP \(bu 2
+\fBRuntime only\fR \- applies immediately but lost after reboot
+.IP \(bu 2
+\fBPersistent only\fR \- written to /etc/sysctl.d/ and applied on next reboot
+.RE
+.SS Risk Levels
+Every command is tagged with a risk level:
+.RS
+.IP \(bu 2
+\fBlow\fR \- read-only or informational commands (e.g., status checks)
+.IP \(bu 2
+\fBmedium\fR \- configuration changes that can be reversed (e.g., sysctl)
+.IP \(bu 2
+\fBhigh\fR \- potentially destructive or hard-to-reverse operations (e.g., disk formatting, SELinux mode changes)
+.RE
+.SS Execution Logging
+All command executions are logged to \fB/var/log/red-ai/\fR with automatic
+log rotation. Logs include timestamps, prompts, commands, exit codes, and
+output for audit compliance.
+.SH EXAMPLES
+.TP
+Preview commands to disable transparent hugepages:
+.B red-ai --dry-run disable transparent hugepages
+.TP
+Enable IP forwarding with automatic confirmation:
+.B red-ai -y enable ip forwarding
+.TP
+Check system information:
+.B red-ai --info
+.TP
+View last 5 executions:
+.B red-ai --history 5
+.TP
+Configure kdump with preflight checks:
+.B red-ai enable kdump
+.TP
+Tune kernel parameters:
+.B red-ai set vm.swappiness to 10
+.SH EXIT STATUS
+.TP
+.B 0
+Successful completion.
+.TP
+.B 1
+An error occurred: no prompt given, command generation failed, user aborted,
+or root privileges required but not available.
+.SH FILES
+.TP
+.I /var/log/red-ai/
+Execution audit logs with automatic rotation.
+.TP
+.I /etc/sysctl.d/
+Persistent sysctl configuration files created by red-ai.
+.SH ENVIRONMENT
+.TP
+.B OLLAMA_HOST
+Override the Ollama API endpoint (default: http://localhost:11434).
+.SH REQUIREMENTS
+.IP \(bu 2
+Python 3.6 or later (stdlib only, no external dependencies)
+.IP \(bu 2
+Root privileges for execution mode (dry-run works without root)
+.IP \(bu 2
+RHEL 7, 8, or 9
+.IP \(bu 2
+Ollama (optional, for AI-enhanced responses)
+.SH AUTHOR
+Natesh Sharma
+.SH LICENSE
+GPL-3.0
+.SH SEE ALSO
+.BR sysctl (8),
+.BR systemctl (1),
+.BR grubby (8),
+.BR firewall-cmd (1),
+.BR semanage (8)

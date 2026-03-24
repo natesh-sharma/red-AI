@@ -110,6 +110,7 @@ def read_history(count=10):
             log_files.append(rotated)
 
     entries = []
+    sep = "=" * 70
     for lf in log_files:
         if not os.path.exists(lf):
             continue
@@ -119,12 +120,13 @@ def read_history(count=10):
         except (PermissionError, IOError):
             continue
 
-        # Split on the separator line
-        parts = content.split("=" * 70)
-        # Each entry uses two separator lines, so entries are at odd indices
-        for i in range(1, len(parts) - 1, 2):
-            entry = "=" * 70 + parts[i] + "=" * 70
-            entries.append(entry)
+        # Split on the separator line and collect non-empty parts
+        parts = content.split(sep)
+        for part in parts:
+            stripped = part.strip()
+            if stripped and "Timestamp" in stripped:
+                entry = sep + "\n" + stripped + "\n" + sep
+                entries.append(entry)
 
     # Return last N entries (most recent last)
     return entries[-count:]

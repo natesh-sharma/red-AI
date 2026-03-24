@@ -3,7 +3,7 @@ import urllib.request
 from .system_info import get_system_info, format_system_context
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "red-ai-model"
+OLLAMA_MODEL = "qwen2:1.5b"
 
 
 def _detect_sysctl_in_response(result):
@@ -76,11 +76,24 @@ def get_ai_response(prompt):
     }
 
 
+SYSTEM_PROMPT = (
+    "You are RED-AI, an expert RHEL Linux system administrator assistant. "
+    "Translate natural language requests into precise RHEL shell commands. "
+    "ALWAYS respond with valid JSON only - no markdown, no extra text. "
+    "Response format: "
+    '{"description":"Brief description","category":"kernel|networking|storage|security|services|users|packages|performance|boot|time|logging|subscriptions|system",'
+    '"commands":["cmd1","cmd2"],"risk_level":"low|medium|high","requires_reboot":true/false,"notes":"warnings"} '
+    "Rules: Use full paths when ambiguous. For RHEL 7 use yum; RHEL 8/9 use dnf. "
+    "Prefer nmcli for networking. Set accurate risk_level. "
+    "For sysctl changes, ONLY use 'sysctl -w param=value' - the tool handles persistence. "
+    "If the request is not RHEL-related, respond with: {\"error\":\"Not related to RHEL system configuration.\"}"
+)
+
+
 def _call_ollama(prompt):
     """Call local Ollama LLM to generate commands.
 
-    The SYSTEM prompt is already baked into the Modelfile, so we only send
-    the system context and user request to avoid duplicate token processing.
+    Sends a system prompt with RHEL expertise context and the user request.
     """
     system_info = get_system_info()
     system_context = format_system_context(system_info)
@@ -91,6 +104,7 @@ def _call_ollama(prompt):
     payload = json.dumps({
         "model": OLLAMA_MODEL,
         "prompt": full_prompt,
+        "system": SYSTEM_PROMPT,
         "stream": False,
         "options": {
             "temperature": 0.1,

@@ -142,15 +142,45 @@ def _handle_kdump_enable(dry_run):
 def main():
     parser = argparse.ArgumentParser(
         prog="red-ai",
-        description="AI-powered RHEL configuration tool",
+        description=(
+            "AI-powered RHEL system configuration tool. "
+            "Describe tasks in plain English and red-ai generates, "
+            "previews, and optionally executes the appropriate commands. "
+            "Uses a local database of 230+ RHEL patterns with Ollama AI fallback."
+        ),
+        epilog=(
+            "examples:\n"
+            "  red-ai --dry-run disable transparent hugepages\n"
+            "  red-ai enable kdump\n"
+            "  red-ai set vm.swappiness to 10\n"
+            "  red-ai --info\n"
+            "  red-ai --history 5\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("prompt", nargs="*", help="Configuration request in plain English")
-    parser.add_argument("-d", "--dry-run", action="store_true", help="Preview commands without executing")
-    parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation prompts")
-    parser.add_argument("-v", "--version", action="store_true", help="Show version")
-    parser.add_argument("-i", "--info", action="store_true", help="Show system information")
-    parser.add_argument("--history", nargs="?", const=10, type=int, metavar="N",
-                        help="Show last N executions (default: 10)")
+    parser.add_argument(
+        "prompt", nargs="*",
+        help="natural language description of the configuration task "
+             "(e.g., 'disable SELinux', 'enable ip forwarding')")
+    parser.add_argument(
+        "-d", "--dry-run", action="store_true",
+        help="preview generated commands without executing; "
+             "does not require root privileges")
+    parser.add_argument(
+        "-y", "--yes", action="store_true",
+        help="skip confirmation prompts and execute immediately; "
+             "use with caution for high-risk operations")
+    parser.add_argument(
+        "-v", "--version", action="store_true",
+        help="show the red-ai version number and exit")
+    parser.add_argument(
+        "-i", "--info", action="store_true",
+        help="display detected system information (RHEL version, "
+             "kernel, SELinux, firewalld status)")
+    parser.add_argument(
+        "--history", nargs="?", const=10, type=int, metavar="N",
+        help="show the last N command executions from the audit log "
+             "(default: 10)")
 
     args = parser.parse_args()
 

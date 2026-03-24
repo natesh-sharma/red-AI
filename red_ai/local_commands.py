@@ -2208,6 +2208,15 @@ def match_local_command(prompt):
         if hits == 0:
             continue
 
+        # Require at least one specific (non-generic) keyword to match
+        has_specific = any(
+            (keyword not in GENERIC_KEYWORDS) and
+            (keyword in prompt_words or keyword in expanded_words or keyword in prompt_lower)
+            for keyword in keywords
+        )
+        if not has_specific:
+            continue
+
         # Score combines coverage ratio with weighted keyword importance
         max_possible = len(keywords) * 2
         coverage = hits / max_possible
