@@ -1,9 +1,62 @@
 import json
+import os
+import subprocess
+import time
 import urllib.request
 from .system_info import get_system_info, format_system_context
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "qwen2:1.5b"
+
+
+def _is_ollama_running():
+    """Check if Ollama is responding on its API port."""
+    try:
+        req = urllib.request.Request("http://localhost:11434/api/tags")
+        with urllib.request.urlopen(req, timeout=3):
+            return True
+    except Exception:
+        return False
+
+
+def _start_ollama():
+    """Try to start Ollama if installed but not running.
+
+    Attempts systemctl first (Linux service), then 'ollama serve' as
+    a background process. Returns True if Ollama becomes available.
+    """
+    # Check if ollama binary exists
+    ollama_bin = None
+    for path in ["/usr/local/bin/ollama", "/usr/bin/ollama"]:
+        if os.path.isfile(path):
+            ollama_bin = path
+            break
+    if ollama_bin is None:
+        return False
+
+    # Try systemctl first (works on RHEL with ollama.service)
+    try:
+        subprocess.run(
+            ["systemctl", "start", "ollama"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        # systemctl not available or failed, try direct serve
+        try:
+            subprocess.Popen(
+                [ollama_bin, "serve"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            return False
+
+    # Wait for Ollama to become ready (up to 10 seconds)
+    for _ in range(10):
+        time.sleep(1)
+        if _is_ollama_running():
+            return True
+    return False
 
 
 def _detect_sysctl_in_response(result):
@@ -50,7 +103,26 @@ def get_ai_response(prompt):
                            " [Matched from local command database]").strip()
         return result
 
-    # Fall back to Ollama
+    # Fall back to Ollama (auto-start if installed but not running)
+    if not _is_ollama_running():
+        from .executor import color
+        print(color("Ollama not running. Attempting to start...", "yellow"))
+        if _start_ollama():
+            print(color("Ollama started successfully.", "green"))
+        else:
+            return {
+                "error": (
+                    "No matching command found locally and Ollama could not be started.\n"
+                    "\n"
+                    "To enable AI mode:\n"
+                    "  1. Install Ollama:  curl -fsSL https://ollama.ai/install.sh | sh\n"
+                    "  2. Pull the model:  ollama pull qwen2:1.5b\n"
+                    "  3. Start Ollama:    systemctl start ollama\n"
+                    "\n"
+                    "Or try rephrasing your request to match a local command pattern."
+                ),
+            }
+
     try:
         result = _call_ollama(prompt)
         result["source"] = "ollama"
@@ -61,15 +133,12 @@ def get_ai_response(prompt):
 
     return {
         "error": (
-            "No matching command found locally and Ollama is not available.\n"
+            "No matching command found locally and Ollama query failed.\n"
             "\n"
-            "To enable AI mode, set up the RED-AI custom model:\n"
-            "  1. Install Ollama:  curl -fsSL https://ollama.ai/install.sh | sh\n"
-            "  2. Build the model: ollama create red-ai-model -f Modelfile\n"
-            "  3. Verify it works: ollama run red-ai-model \"check kernel version\"\n"
-            "\n"
-            "RED-AI uses its own fine-tuned Modelfile (based on Mistral) with 230+\n"
-            "RHEL-specific training examples. No other models are needed.\n"
+            "Verify Ollama is working:\n"
+            "  1. Check status:  systemctl status ollama\n"
+            "  2. Pull model:    ollama pull qwen2:1.5b\n"
+            "  3. Test it:       ollama run qwen2:1.5b \"hello\"\n"
             "\n"
             "Or try rephrasing your request to match a local command pattern."
         ),
