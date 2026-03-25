@@ -294,6 +294,13 @@ def main():
         print(color(f"\n{response['error']}", "red"))
         return 1
 
+    # Show source indicator
+    source = response.get("source", "unknown")
+    if source == "local_commands":
+        print(color("[Source: Local Command Database]", "green"))
+    elif source == "ollama":
+        print(color("[Source: Ollama AI Engine]", "blue"))
+
     commands = response.get("commands", [])
     if not commands:
         print(color("\nNo commands generated for this request.", "yellow"))
