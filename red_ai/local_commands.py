@@ -2030,8 +2030,10 @@ def _match_sysctl(prompt):
             corrected_lower = corrected_lower.replace(typo, fix)
 
     # Expand shorthand parameter names before matching
+    # Skip if the full parameter is already present to avoid duplication
+    # (e.g. "vm.swappiness" would become "vm.vm.swappiness" without this check)
     for shorthand, full_param in SYSCTL_SHORTHANDS.items():
-        if shorthand in corrected_lower:
+        if shorthand in corrected_lower and full_param not in corrected_lower:
             corrected_lower = corrected_lower.replace(shorthand, full_param)
 
     # Match sysctl-style parameter names (e.g. kernel.sysrq, vm.swappiness, net.ipv4.ip_forward, fs.file-max)
