@@ -19,9 +19,10 @@ class TestGetAIResponse(unittest.TestCase):
         self.assertEqual(result["source"], "local_commands")
         self.assertIn("commands", result)
 
+    @patch("red_ai.ai_engine._is_ollama_running", return_value=True)
     @patch("red_ai.ai_engine._call_ollama")
     @patch("red_ai.local_commands.match_local_command", return_value=None)
-    def test_falls_back_to_ollama(self, mock_match, mock_ollama):
+    def test_falls_back_to_ollama(self, mock_match, mock_ollama, mock_running):
         mock_ollama.return_value = {
             "description": "AI generated",
             "commands": ["systemctl restart httpd"],
@@ -30,9 +31,10 @@ class TestGetAIResponse(unittest.TestCase):
         result = get_ai_response("restart apache")
         self.assertEqual(result["source"], "ollama")
 
+    @patch("red_ai.ai_engine._is_ollama_running", return_value=True)
     @patch("red_ai.ai_engine._call_ollama", side_effect=Exception("offline"))
     @patch("red_ai.local_commands.match_local_command", return_value=None)
-    def test_returns_error_when_both_fail(self, mock_match, mock_ollama):
+    def test_returns_error_when_both_fail(self, mock_match, mock_ollama, mock_running):
         result = get_ai_response("something unknown")
         self.assertIn("error", result)
 
