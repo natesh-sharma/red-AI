@@ -29,8 +29,9 @@ fi
 
 # 3. Run tests
 echo "[3/4] Running tests..."
-if python3 -m unittest discover -s tests 2>&1 | tail -1 | grep -q "^OK"; then
-    TOTAL=$(python3 -m unittest discover -s tests 2>&1 | grep "^Ran" | grep -oE '[0-9]+')
+TEST_OUTPUT=$(python3 -m unittest discover -s tests 2>&1)
+if echo "$TEST_OUTPUT" | grep -q "^OK"; then
+    TOTAL=$(echo "$TEST_OUTPUT" | grep -m1 "^Ran [0-9]" | sed 's/^Ran \([0-9]*\).*/\1/')
     echo "  $TOTAL tests passed"
 else
     echo "  FAIL: Tests failed"
@@ -39,7 +40,7 @@ fi
 
 # 4. Check for secrets
 echo "[4/4] Scanning for hardcoded secrets..."
-SECRETS=$(grep -rnE '(password|secret|api_key|token)\s*=' red_ai/*.py 2>/dev/null | grep -vE '(environ|getenv|args\.|#|None|""|'\'\'')' | head -5)
+SECRETS=$(grep -rnE '(password|secret|api_key|token)\s*=' red_ai/*.py 2>/dev/null | grep -vE '(environ|getenv|args\.|#|None|""|'\'\'')' | head -5 || true)
 if [ -n "$SECRETS" ]; then
     echo "  WARNING: Possible hardcoded secrets:"
     echo "$SECRETS" | sed 's/^/    /'
