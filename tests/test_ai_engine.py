@@ -2,7 +2,7 @@
 import json
 import unittest
 from unittest.mock import patch, MagicMock
-from red_ai.ai_engine import get_ai_response, _detect_sysctl_in_response
+from red_ai.ai_engine import get_ai_response, _detect_sysctl_in_response, _detect_grubby_in_response
 
 
 class TestGetAIResponse(unittest.TestCase):
@@ -72,6 +72,84 @@ class TestSysctlDetection(unittest.TestCase):
         result = {"description": "No commands"}
         detected = _detect_sysctl_in_response(result)
         self.assertNotIn("persist_mode", detected)
+
+
+class TestGrubbyDetection(unittest.TestCase):
+    """Test grubby kernel modification detection in AI responses."""
+
+    def test_detects_grubby_update_kernel(self):
+        result = {
+            "description": "Add kernel param",
+            "commands": ["grubby --update-kernel=ALL --args='transparent_hugepage=never'"],
+            "risk_level": "medium",
+            "requires_reboot": False,
+            "notes": "",
+        }
+        detected = _detect_grubby_in_response(result)
+        self.assertTrue(detected["requires_reboot"])
+        self.assertIn("reboot", detected["notes"].lower())
+
+    def test_detects_grubby_set_default(self):
+        result = {
+            "description": "Set default kernel",
+            "commands": ["grubby --set-default /boot/vmlinuz-5.14.0"],
+            "risk_level": "high",
+            "requires_reboot": False,
+            "notes": "",
+        }
+        detected = _detect_grubby_in_response(result)
+        self.assertTrue(detected["requires_reboot"])
+
+    def test_detects_grubby_remove_args(self):
+        result = {
+            "description": "Remove kernel param",
+            "commands": ["grubby --update-kernel=ALL --remove-args='hugepage'"],
+            "risk_level": "medium",
+            "requires_reboot": False,
+            "notes": "",
+        }
+        detected = _detect_grubby_in_response(result)
+        self.assertTrue(detected["requires_reboot"])
+
+    def test_ignores_readonly_grubby(self):
+        result = {
+            "description": "Check boot entries",
+            "commands": ["grubby --default-kernel", "grubby --info=ALL"],
+            "risk_level": "low",
+            "requires_reboot": False,
+            "notes": "",
+        }
+        detected = _detect_grubby_in_response(result)
+        self.assertFalse(detected["requires_reboot"])
+
+    def test_ignores_non_grubby_commands(self):
+        result = {
+            "description": "Install package",
+            "commands": ["yum install -y httpd"],
+            "risk_level": "low",
+            "requires_reboot": False,
+            "notes": "",
+        }
+        detected = _detect_grubby_in_response(result)
+        self.assertFalse(detected["requires_reboot"])
+
+    def test_no_duplicate_reboot_note(self):
+        result = {
+            "description": "Add kernel param",
+            "commands": ["grubby --update-kernel=ALL --args='crashkernel=auto'"],
+            "risk_level": "high",
+            "requires_reboot": True,
+            "notes": "Reboot required for crashkernel.",
+        }
+        detected = _detect_grubby_in_response(result)
+        self.assertTrue(detected["requires_reboot"])
+        # Should not append duplicate reboot text
+        self.assertEqual(detected["notes"].count("eboot"), 1)
+
+    def test_handles_empty_commands(self):
+        result = {"description": "Empty", "commands": []}
+        detected = _detect_grubby_in_response(result)
+        self.assertFalse(detected.get("requires_reboot", False))
 
 
 if __name__ == "__main__":

@@ -114,6 +114,12 @@ def execute_commands(commands, dry_run=False, skip_confirm=False, risk_level="me
         print(f"{color(f'Failed: {failed_count}', 'red')}")
 
     if requires_reboot:
-        print(color("\nREMINDER: Please reboot the system for changes to take effect.", "yellow"))
+        print(color("\nREMINDER: A system reboot is required for changes to take full effect.", "yellow"))
+        if not skip_confirm and failed_count == 0:
+            if confirm("Would you like to reboot now?"):
+                print(color("Rebooting system...", "red"))
+                subprocess.run(["reboot"], timeout=10)
+            else:
+                print(color("Reboot skipped. Remember to reboot manually.", "yellow"))
 
     return results

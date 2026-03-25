@@ -91,6 +91,36 @@ def _detect_sysctl_in_response(result):
     return result
 
 
+def _detect_grubby_in_response(result):
+    """Detect grubby kernel modification commands and flag for reboot.
+
+    If the response contains grubby commands that modify the kernel command
+    line (--update-kernel, --set-default, --remove-args, --args), set
+    requires_reboot=True so the user is prompted to reboot.
+    Read-only grubby commands (--default-kernel, --info) are ignored.
+    """
+    import re
+
+    commands = result.get("commands", [])
+    if not commands:
+        return result
+
+    modify_pattern = re.compile(
+        r'grubby\s+.*(--update-kernel|--set-default|--args|--remove-args)')
+
+    for cmd in commands:
+        if modify_pattern.search(cmd):
+            result["requires_reboot"] = True
+            if result.get("notes"):
+                if "reboot" not in result["notes"].lower():
+                    result["notes"] += " Reboot required for kernel command line changes to take effect."
+            else:
+                result["notes"] = "Reboot required for kernel command line changes to take effect."
+            return result
+
+    return result
+
+
 def get_ai_response(prompt):
     """Get AI response via local commands first, fall back to Ollama (local LLM)."""
     from .local_commands import match_local_command
@@ -101,6 +131,7 @@ def get_ai_response(prompt):
         result["source"] = "local_commands"
         result["notes"] = (result.get("notes", "") +
                            " [Matched from local command database]").strip()
+        result = _detect_grubby_in_response(result)
         return result
 
     # Fall back to Ollama (auto-start if installed but not running)
@@ -127,6 +158,7 @@ def get_ai_response(prompt):
         result = _call_ollama(prompt)
         result["source"] = "ollama"
         result = _detect_sysctl_in_response(result)
+        result = _detect_grubby_in_response(result)
         return result
     except Exception:
         pass

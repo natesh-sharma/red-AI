@@ -12,8 +12,8 @@ LOCAL_COMMANDS = [
             "grubby --update-kernel=ALL --args='transparent_hugepage=never'",
         ],
         "risk_level": "medium",
-        "requires_reboot": False,
-        "notes": "Runtime change is immediate. Grub change persists across reboots.",
+        "requires_reboot": True,
+        "notes": "Runtime change is immediate. Reboot required for grub change to take full effect.",
     },
     {
         "keywords": ["enable", "transparent", "hugepages", "thp"],
@@ -24,8 +24,8 @@ LOCAL_COMMANDS = [
             "grubby --update-kernel=ALL --remove-args='transparent_hugepage=never'",
         ],
         "risk_level": "medium",
-        "requires_reboot": False,
-        "notes": "Runtime change is immediate. Grub change persists across reboots.",
+        "requires_reboot": True,
+        "notes": "Runtime change is immediate. Reboot required for grub change to take full effect.",
     },
     {
         "keywords": ["load", "kernel", "module"],
