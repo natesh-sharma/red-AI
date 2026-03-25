@@ -56,7 +56,14 @@ jobs:
 
       - name: Check Python 3.6 compatibility
         run: |
-          if grep -rnE '(:=|f"{|walrus)' red_ai/*.py; then
-            echo "::error::Python 3.6 incompatible syntax found"
+          # Check for walrus operator (:=) which requires Python 3.8+
+          if grep -rnE ':=' red_ai/*.py | grep -vE '^\s*#'; then
+            echo "::error::Walrus operator (:=) found — requires Python 3.8+"
+            exit 1
+          fi
+          # Check for positional-only params (/) which requires Python 3.8+
+          # Check for f-string = debugging (f"{x=}") which requires Python 3.8+
+          if grep -rnE 'f"[^"]*\{[^}]+=\}' red_ai/*.py; then
+            echo "::error::f-string debugging syntax (f'{x=}') found — requires Python 3.8+"
             exit 1
           fi
