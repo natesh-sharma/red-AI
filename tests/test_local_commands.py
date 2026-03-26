@@ -1,6 +1,6 @@
 """Tests for the offline local command database and keyword matching."""
 import unittest
-from red_ai.local_commands import LOCAL_COMMANDS, match_local_command
+from red_ai.local_commands import LOCAL_COMMANDS, match_local_command, _validate_sysctl_value
 
 
 class TestLocalCommandsSchema(unittest.TestCase):
@@ -128,6 +128,75 @@ class TestKeywordMatching(unittest.TestCase):
         upper = match_local_command("Disable SELinux")
         self.assertIsNotNone(lower)
         self.assertIsNotNone(upper)
+
+
+class TestSysctlValidation(unittest.TestCase):
+    """Test sysctl value validation."""
+
+    def test_valid_swappiness(self):
+        self.assertIsNone(_validate_sysctl_value("vm.swappiness", "10"))
+        self.assertIsNone(_validate_sysctl_value("vm.swappiness", "0"))
+        self.assertIsNone(_validate_sysctl_value("vm.swappiness", "200"))
+
+    def test_swappiness_out_of_range(self):
+        error = _validate_sysctl_value("vm.swappiness", "1000")
+        self.assertIsNotNone(error)
+        self.assertIn("0-200", error)
+
+    def test_swappiness_negative(self):
+        error = _validate_sysctl_value("vm.swappiness", "-5")
+        self.assertIsNotNone(error)
+
+    def test_non_numeric_value(self):
+        error = _validate_sysctl_value("vm.swappiness", "abc")
+        self.assertIsNotNone(error)
+        self.assertIn("must be a number", error)
+
+    def test_ip_forward_valid(self):
+        self.assertIsNone(_validate_sysctl_value("net.ipv4.ip_forward", "0"))
+        self.assertIsNone(_validate_sysctl_value("net.ipv4.ip_forward", "1"))
+
+    def test_ip_forward_invalid(self):
+        error = _validate_sysctl_value("net.ipv4.ip_forward", "2")
+        self.assertIsNotNone(error)
+
+    def test_unknown_param_accepts_positive(self):
+        self.assertIsNone(_validate_sysctl_value("kernel.custom_param", "42"))
+
+    def test_unknown_param_rejects_negative(self):
+        error = _validate_sysctl_value("kernel.custom_param", "-1")
+        self.assertIsNotNone(error)
+
+    def test_match_rejects_invalid_swappiness(self):
+        result = match_local_command("set swappiness to 1000")
+        self.assertIsNotNone(result)
+        self.assertIn("error", result)
+
+    def test_match_accepts_valid_swappiness(self):
+        result = match_local_command("set swappiness to 10")
+        self.assertIsNotNone(result)
+        self.assertNotIn("error", result)
+        self.assertIn("commands", result)
+
+
+class TestPortValidation(unittest.TestCase):
+    """Test port number validation."""
+
+    def test_valid_port(self):
+        result = match_local_command("open port 443")
+        self.assertIsNotNone(result)
+        self.assertNotIn("error", result)
+
+    def test_invalid_port_too_high(self):
+        result = match_local_command("open port 99999")
+        self.assertIsNotNone(result)
+        self.assertIn("error", result)
+        self.assertIn("1-65535", result["error"])
+
+    def test_valid_port_boundary(self):
+        result = match_local_command("open port 65535")
+        self.assertIsNotNone(result)
+        self.assertNotIn("error", result)
 
 
 if __name__ == "__main__":

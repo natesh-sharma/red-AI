@@ -2006,6 +2006,47 @@ SYSCTL_SHORTHANDS = {
 }
 
 
+SYSCTL_VALID_RANGES = {
+    "vm.swappiness": (0, 200),
+    "vm.dirty_ratio": (0, 100),
+    "vm.dirty_background_ratio": (0, 100),
+    "vm.overcommit_memory": (0, 2),
+    "vm.overcommit_ratio": (0, 100),
+    "net.ipv4.ip_forward": (0, 1),
+    "net.ipv4.tcp_syncookies": (0, 1),
+    "net.ipv4.icmp_echo_ignore_all": (0, 1),
+    "net.ipv4.conf.all.rp_filter": (0, 2),
+    "net.ipv4.conf.default.rp_filter": (0, 2),
+    "kernel.sysrq": (0, 511),
+    "kernel.panic": (0, 3600),
+    "kernel.pid_max": (301, 4194304),
+    "net.core.somaxconn": (1, 65535),
+    "fs.file-max": (1, 9999999),
+}
+
+
+def _validate_sysctl_value(param, value):
+    """Validate sysctl value is numeric and within valid range.
+
+    Returns an error message string if invalid, or None if valid.
+    """
+    try:
+        num = int(value)
+    except ValueError:
+        return "Invalid value '{}' for {}. Value must be a number.".format(value, param)
+
+    if param in SYSCTL_VALID_RANGES:
+        low, high = SYSCTL_VALID_RANGES[param]
+        if num < low or num > high:
+            return "Invalid value {} for {}. Valid range is {}-{}.".format(
+                value, param, low, high)
+
+    if num < 0:
+        return "Invalid value {} for {}. Value cannot be negative.".format(value, param)
+
+    return None
+
+
 def _match_sysctl(prompt):
     """Detect sysctl parameter patterns and generate dynamic commands.
 
@@ -2095,6 +2136,11 @@ def _match_sysctl(prompt):
             "ask_action": True,
             "sysctl_param": param,
         }
+
+    # Validate the value
+    error = _validate_sysctl_value(param, value)
+    if error:
+        return {"error": error}
 
     # Return with persist_mode=ask so CLI prompts the user
     namespace = param.split(".")[0]
@@ -2241,6 +2287,16 @@ def match_local_command(prompt):
     commands, notes = _substitute_placeholders(
         commands, notes, prompt_words, best_match["keywords"]
     )
+
+    # Validate port numbers in firewall/network commands
+    import re as _re
+    if best_match["category"] == "security" and "port" in best_match["keywords"]:
+        for cmd in commands:
+            port_match = _re.search(r'--add-port=(\d+)|--remove-port=(\d+)|port=(\d+)', cmd)
+            if port_match:
+                port_num = int(port_match.group(1) or port_match.group(2) or port_match.group(3))
+                if port_num < 1 or port_num > 65535:
+                    return {"error": "Invalid port number {}. Valid range is 1-65535.".format(port_num)}
 
     result = {
         "description": best_match["description"],

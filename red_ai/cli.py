@@ -254,6 +254,11 @@ def main():
             if not value:
                 print(color("No value provided.", "red"))
                 return 1
+            from .local_commands import _validate_sysctl_value
+            error = _validate_sysctl_value(param, value)
+            if error:
+                print(color(error, "red"))
+                return 1
             response = {
                 "description": "Set {} = {}".format(param, value),
                 "category": "kernel",
