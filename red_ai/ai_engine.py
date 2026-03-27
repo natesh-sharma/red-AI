@@ -6,7 +6,7 @@ import urllib.request
 from .system_info import get_system_info, format_system_context
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "qwen2:1.5b"
+OLLAMA_MODEL = "mistral:latest"
 
 
 def _is_ollama_running():
@@ -160,8 +160,9 @@ def get_ai_response(prompt):
         result = _detect_sysctl_in_response(result)
         result = _detect_grubby_in_response(result)
         return result
-    except Exception:
-        pass
+    except Exception as e:
+        from .executor import color
+        print(color("Ollama error: {}".format(e), "yellow"))
 
     return {
         "error": (
@@ -178,16 +179,14 @@ def get_ai_response(prompt):
 
 
 SYSTEM_PROMPT = (
-    "You are RED-AI, an expert RHEL Linux system administrator assistant. "
-    "Translate natural language requests into precise RHEL shell commands. "
-    "ALWAYS respond with valid JSON only - no markdown, no extra text. "
-    "Response format: "
-    '{"description":"Brief description","category":"kernel|networking|storage|security|services|users|packages|performance|boot|time|logging|subscriptions|system",'
-    '"commands":["cmd1","cmd2"],"risk_level":"low|medium|high","requires_reboot":true/false,"notes":"warnings"} '
-    "Rules: Use full paths when ambiguous. For RHEL 7 use yum; RHEL 8/9 use dnf. "
-    "Prefer nmcli for networking. Set accurate risk_level. "
-    "For sysctl changes, ONLY use 'sysctl -w param=value' - the tool handles persistence. "
-    "If the request is not RHEL-related, respond with: {\"error\":\"Not related to RHEL system configuration.\"}"
+    "You are RED-AI, a RHEL sysadmin assistant. "
+    "Respond with valid JSON only, no markdown. "
+    "Format: "
+    '{"description":"...","category":"kernel|networking|storage|security|services|users|packages|performance|boot|system",'
+    '"commands":["cmd1","cmd2"],"risk_level":"low|medium|high","requires_reboot":false,"notes":"..."} '
+    "Rules: No duplicate commands. No undo commands. Only commands that achieve the goal. "
+    "RHEL 7=yum, RHEL 8/9=dnf. Use postconf -e for postfix (config at /etc/postfix/main.cf). "
+    "For sysctl use 'sysctl -w param=value' only. Keep commands minimal and correct."
 )
 
 
@@ -209,7 +208,7 @@ def _call_ollama(prompt):
         "stream": False,
         "options": {
             "temperature": 0.1,
-            "num_predict": 256,
+            "num_predict": 512,
         },
     }).encode("utf-8")
 
@@ -219,7 +218,7 @@ def _call_ollama(prompt):
         headers={"Content-Type": "application/json"},
     )
 
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=180) as resp:
         data = json.loads(resp.read().decode("utf-8"))
 
     response_text = data.get("response", "")
